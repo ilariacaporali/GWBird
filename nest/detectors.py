@@ -98,12 +98,12 @@ def ET_arms():
     ETCe    = REarth *np.array([0.7499728 , 0.12438134, 0.64966921])
     ETarm = 1e4 #m
 
-    ### These are the positions of the 3 detectors
+    ## These are the positions of the 3 detectors
     ET1     = ETCe +ETarm *(-.5*first -0.28867513*second) 
     ET2     = ETCe +ETarm *(+.5*first -0.28867513*second)
     ET3     = ETCe +ETarm *(+0.57735027*second)
 
-    ### And these are the arms
+    ## And these are the arms
     ETarm1  = (+.5*first -0.28867513*second) -(-.5*first -0.28867513*second)
     ETarm2  = (+0.57735027*second) -(+.5*first -0.28867513*second)
     ETarm3  = (-.5*first -0.28867513*second) -(+0.57735027*second)
@@ -113,7 +113,6 @@ def ET_arms():
     ETarm3_ = ETarm3 / np.linalg.norm(ETarm3)
     
     return ETCe, ET1, ET2, ET3, ETarm1_, ETarm2_, ETarm3_, ETarm
-
 
 def ET_A():
     ETCe, ET1, ET2, ET3, ETarm1_, ETarm2_, ETarm3_, ETarm = ET_arms()
@@ -127,42 +126,94 @@ def ET_C():
     ETCe, ET1, ET2, ET3, ETarm1_, ETarm2_, ETarm3_, ETarm = ET_arms()
     return ET3, ETarm3_, ETarm2_, ETarm, "ET C"
 
-#LISA arms
+
+
+# def ET_arms():
+#     xA = np.array([0.,0.,0.])
+#     xB = np.array([+1/2., np.sqrt(3)/2, 0])
+#     xC = np.array([-1/2, np.sqrt(3)/2, 0])
+#     lBA = xB - xA
+#     lCA = xC - xA
+#     lBC = xB - xC
+#     ETarm = 1e4 #m
+
+#     return xA, xB, xC, lBA, lCA, lBC, ETarm
+
+
+# def ET_A():
+#     xA, xB, xC, lBA, lCA, lBC, LISAarm = ET_arms()
+#     return xA, lBA, lCA, LISAarm, "ET A"
+
+# def ET_B():
+#     xA, xB, xC, lBA, lCA, lBC, LISAarm = ET_arms()
+#     return xB, -lBC, -lBA, LISAarm, "ET B"
+
+# def ET_C():
+#     xA, xB, xC, lBA, lCA, lBC, LISAarm = ET_arms()
+#     return xC, -lCA, lBC, LISAarm, "ET C"
+
+# LISA arms
+
+# def LISA():
+#     Rsolarsys = 1.5e11 #m
+
+#     first = np.array([1., 0., 0.])
+#     second = np.array([0., 1., 0.])
+#     LISACe    = Rsolarsys *np.array([0.7499728 , 0.12438134, 0.64966921])
+#     LISAarm = 2.5e9 #m
+
+#     # ### These are the positions of the 3 detectors
+#     LISA1_     = LISACe + LISAarm *(-.5*first -0.28867513*second) 
+#     LISA2_     = LISACe + LISAarm *(+.5*first -0.28867513*second)
+#     LISA3_     = LISACe + LISAarm *(+0.57735027*second)
+
+#     # ### And these are the arms
+#     LISAarm1_  = (+.5*first -0.28867513*second) - (-.5*first -0.28867513*second)
+#     LISAarm2_  = (+0.57735027*second) -(+.5*first -0.28867513*second)
+#     LISAarm3_  = (-.5*first -0.28867513*second) -(+0.57735027*second)
+
+#     LISAarm1_ = LISAarm1_ #/ np.linalg.norm(LISAarm1_)
+#     LISAarm2_ = LISAarm2_ #/ np.linalg.norm(LISAarm2_)
+#     LISAarm3_ = LISAarm3_ #/ np.linalg.norm(LISAarm3_)
+
+#     return LISA1_, LISA2_, LISA3_, LISAarm1_, LISAarm2_, LISAarm3_, LISAarm
+
+# def LISA1():
+#     LISA1, LISA2, LISA3, LISAarm1_, LISAarm2_, LISAarm3_, LISAarm = LISA()
+#     return LISA1, LISAarm1_, LISAarm2_, LISAarm, "LISA 1"
+
+# def LISA2():
+#     LISA1, LISA2, LISA3, LISAarm1_, LISAarm2_, LISAarm3_, LISAarm = LISA()
+#     return LISA2, -LISAarm3_, -LISAarm1_, LISAarm, "LISA 2"
+
+# def LISA3():
+#     LISA1, LISA2, LISA3, LISAarm1_, LISAarm2_, LISAarm3_, LISAarm = LISA()
+#     return LISA3, -LISAarm2_, LISAarm3_, LISAarm, "LISA 3"
+
 
 def LISA():
-    Rsolarsys = 1.5e11 #m
 
-    first = np.array([1., 0., 0.])
-    second = np.array([0., 1., 0.])
-    LISACe    = Rsolarsys *np.array([0.7499728 , 0.12438134, 0.64966921])
-    LISAarm = 2.5e9 #m
+    LISAarm = 2.5e9
+    xA = np.array([0.,0.,0.])
+    xB = np.array([+1/2., np.sqrt(3)/2, 0])
+    xC = np.array([-1/2, np.sqrt(3)/2, 0])
+    lBA = (xB - xA)
+    lCA = (xC - xA)
+    lBC = (xB - xC)
 
-    ### These are the positions of the 3 detectors
-    LISA1     = LISACe + LISAarm *(-.5*first -0.28867513*second) 
-    LISA2     = LISACe + LISAarm *(+.5*first -0.28867513*second)
-    LISA3     = LISACe + LISAarm *(+0.57735027*second)
-
-    ### And these are the arms
-    LISAarm1  = (+.5*first -0.28867513*second) - (-.5*first -0.28867513*second)
-    LISAarm2  = (+0.57735027*second) -(+.5*first -0.28867513*second)
-    LISAarm3  = (-.5*first -0.28867513*second) -(+0.57735027*second)
-
-    LISAarm1_ = LISAarm1 / np.linalg.norm(LISAarm1)
-    LISAarm2_ = LISAarm2 / np.linalg.norm(LISAarm2)
-    LISAarm3_ = LISAarm3 / np.linalg.norm(LISAarm3)
-    return LISACe, LISA1, LISA2, LISA3, LISAarm1_, LISAarm2_, LISAarm3_, LISAarm
+    return xA, xB, xC, lBA, lCA, lBC, LISAarm
 
 def LISA1():
-    LISA_c, LISA1, LISA2, LISA3, LISAarm1_, LISAarm2_, LISAarm3_, LISAarm = LISA()
-    return LISA1, LISAarm1_, LISAarm3_, LISAarm, "LISA 1"
+    xA, xB, xC, lBA, lCA, lBC, LISAarm = LISA()
+    return xA*LISAarm, lBA, lCA, LISAarm, "LISA 1"
 
 def LISA2():
-    LISA_c, LISA1, LISA2, LISA3, LISAarm1_, LISAarm2_, LISAarm3_, LISAarm = LISA()
-    return LISA2, LISAarm2_, LISAarm1_, LISAarm, "LISA 2"
+    xA, xB, xC, lBA, lCA, lBC, LISAarm = LISA()
+    return xB*LISAarm, -lBC, -lBA, LISAarm, "LISA 2"
 
 def LISA3():
-    LISA_c, LISA1, LISA2, LISA3, LISAarm1_, LISAarm2_, LISAarm3_, LISAarm = LISA()
-    return LISA3, LISAarm3_, LISAarm2_, LISAarm, "LISA 3"
+    xA, xB, xC, lBA, lCA, lBC, LISAarm = LISA()
+    return xC*LISAarm, -lCA, lBC, LISAarm, "LISA 3"
 
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

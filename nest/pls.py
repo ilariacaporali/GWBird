@@ -125,6 +125,30 @@ def find_pls_s(which_det1, which_det2, beta_min, beta_max, fref, snr, Tobs, shif
         pls[i] = np.max(Omega[:,i])
     return f_i, pls, beta, Omega
 
+def find_pls_weighted_t(which_det1, which_det2, beta_min, beta_max, fref, snr, Tobs, shift_angle):
+
+    pls1 = find_pls_t(which_det1, which_det2, beta_min, beta_max, fref, snr, Tobs, shift_angle)
+    pls2 = find_pls_t(which_det2, which_det1, beta_min, beta_max, fref, snr, Tobs, shift_angle)
+    pls3 = find_pls_t(which_det1, which_det1, beta_min, beta_max, fref, snr, Tobs, shift_angle)
+
+    return pls1[0], 1/( 1/pls1[1] + 1/pls2[1] + 1/pls3[1])
+
+def find_pls_weighted_v(which_det1, which_det2, beta_min, beta_max, fref, snr, Tobs, shift_angle):
+
+    pls1 = find_pls_v(which_det1, which_det2, beta_min, beta_max, fref, snr, Tobs, shift_angle)
+    pls2 = find_pls_v(which_det2, which_det1, beta_min, beta_max, fref, snr, Tobs, shift_angle)
+    pls3 = find_pls_v(which_det1, which_det1, beta_min, beta_max, fref, snr, Tobs, shift_angle)
+
+    return pls1[0], 1/( 1/pls1[1] + 1/pls2[1] + 1/pls3[1])
+
+def find_pls_weighted_s(which_det1, which_det2, beta_min, beta_max, fref, snr, Tobs, shift_angle):
+
+    pls1 = find_pls_s(which_det1, which_det2, beta_min, beta_max, fref, snr, Tobs, shift_angle)
+    pls2 = find_pls_s(which_det2, which_det1, beta_min, beta_max, fref, snr, Tobs, shift_angle)
+    pls3 = find_pls_s(which_det1, which_det1, beta_min, beta_max, fref, snr, Tobs, shift_angle)
+
+    return pls1[0], (1/( 1/pls1[1] + 1/pls2[1] + 1/pls3[1]))
+
 
 
 

@@ -128,7 +128,7 @@ def skymap_apf(psi, det_name1, nside, f, shift_angle=None):
         plt.rcParams.update({'font.size': 17})
         titles = ["tensor", "vector", "scalar"]
         titles = np.array(titles).flatten()
-        plt.suptitle(r"$F(\hat{{\Omega}})$ ({0})".format(which_det1))
+        plt.suptitle(r"$F^2(\hat{{\Omega}})$ ({0})".format(which_det1))
 
         for i in range(len(maps)):
                 plt.axes(ax[i])
@@ -174,11 +174,11 @@ def skymap_apf(psi, det_name1, nside, f, shift_angle=None):
 
 def skymap_overlap(psi, det_name1, det_name2, nside, f, shift_angle=None):
     
-        if(det_name1 =='ET L2' and det_name2 !='ET L2'):
+        if(det_name1 =='ET L2' and det_name2 !='ET L1'):
             ec1, u1, v1, l1, which_det1 = det.detector(det_name1, shift_angle)
             ec2, u2, v2, l2, which_det2 = det.detector(det_name2, None)
         
-        elif(det_name2 =='ET L2' and det_name1 !='ET L2'):
+        elif(det_name2 =='ET L1' and det_name1 !='ET L2'):
             ec1, u1, v1, l1, which_det1 = det.detector(det_name1, None)
             ec2, u2, v2, l2, which_det2 = det.detector(det_name2, shift_angle)
             
