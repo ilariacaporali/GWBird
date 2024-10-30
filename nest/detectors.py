@@ -54,7 +54,9 @@ def KAGRA(): # controllare se i valori sono giusti
 
 def ET_L_sardinia():
     beta = pi/2
-    ET_L1_c = np.array([0.7499728 , 0.12438134, 0.64966921])*REarth
+    #ET_L1_c = np.array([0.7499728 , 0.12438134, 0.64966921])*REarth
+    #ET_L1_c = np.array([0.750734, 0.124943, 0.648682])*REarth
+    ET_L1_c = np.array([0.7499727960741946, 0.12438133925959684, 0.6496692139794248])*REarth
     ET_L1_1 = np.array([-0.639881, -0.106494, 0.761506])
     ET_L1_2 = rot_axis(ET_L1_1, pi/2, ET_L1_c)
     l = 1.5e4 #m
@@ -62,9 +64,10 @@ def ET_L_sardinia():
     
 
 def ET_L_netherlands():
-    sep_angle = np.deg2rad(2.51)
+    sep_angle = np.deg2rad(0)
     ET_L1_c, ET_L1_1, ET_L1_2, l, old_name = ET_L_sardinia()
-    ET_L2_c = np.array([0.627568, 0.062529, 0.776046])*REarth
+    #ET_L2_c = np.array([0.627568, 0.062529, 0.776046])*REarth
+    ET_L2_c = np.array([0.6296925601906378, 0.06530072687979514, 0.7740950165900375])*REarth
     ET_L2_1_int = rot_axis(ET_L1_1, sep_angle , ET_L1_c)
     ET_L2_2_int = rot_axis(ET_L1_2, sep_angle, ET_L1_c)
     beta = rot_angle(ET_L1_c, ET_L2_c)
@@ -91,66 +94,66 @@ def CE():
 
 #triangular shaped
 
-def ET_arms():
-    REarth = 6.371 * 1e6 #m
-    first = np.array([1., 0., 0.])
-    second = np.array([0., 1., 0.])
-    ETCe    = REarth *np.array([0.7499728 , 0.12438134, 0.64966921])
-    ETarm = 1e4 #m
-
-    ## These are the positions of the 3 detectors
-    ET1     = ETCe +ETarm *(-.5*first -0.28867513*second) 
-    ET2     = ETCe +ETarm *(+.5*first -0.28867513*second)
-    ET3     = ETCe +ETarm *(+0.57735027*second)
-
-    ## And these are the arms
-    ETarm1  = (+.5*first -0.28867513*second) -(-.5*first -0.28867513*second)
-    ETarm2  = (+0.57735027*second) -(+.5*first -0.28867513*second)
-    ETarm3  = (-.5*first -0.28867513*second) -(+0.57735027*second)
-
-    ETarm1_ = ETarm1 / np.linalg.norm(ETarm1)
-    ETarm2_ = ETarm2 / np.linalg.norm(ETarm2)
-    ETarm3_ = ETarm3 / np.linalg.norm(ETarm3)
-    
-    return ETCe, ET1, ET2, ET3, ETarm1_, ETarm2_, ETarm3_, ETarm
-
-def ET_A():
-    ETCe, ET1, ET2, ET3, ETarm1_, ETarm2_, ETarm3_, ETarm = ET_arms()
-    return ET1, ETarm1_, ETarm3_, ETarm, "ET A"
-
-def ET_B():
-    ETCe, ET1, ET2, ET3, ETarm1_, ETarm2_, ETarm3_, ETarm= ET_arms()
-    return ET2, ETarm2_, ETarm1_, ETarm, "ET B"
-
-def ET_C():
-    ETCe, ET1, ET2, ET3, ETarm1_, ETarm2_, ETarm3_, ETarm = ET_arms()
-    return ET3, ETarm3_, ETarm2_, ETarm, "ET C"
-
-
-
 # def ET_arms():
-#     xA = np.array([0.,0.,0.])
-#     xB = np.array([+1/2., np.sqrt(3)/2, 0])
-#     xC = np.array([-1/2, np.sqrt(3)/2, 0])
-#     lBA = xB - xA
-#     lCA = xC - xA
-#     lBC = xB - xC
+#     REarth = 6.371 * 1e6 #m
+#     first = np.array([1., 0., 0.])
+#     second = np.array([0., 1., 0.])
+#     ETCe    = REarth *np.array([0.7499728 , 0.12438134, 0.64966921])
 #     ETarm = 1e4 #m
 
-#     return xA, xB, xC, lBA, lCA, lBC, ETarm
+#     ## These are the positions of the 3 detectors
+#     ET1     = ETCe +ETarm *(-.5*first -0.28867513*second) 
+#     ET2     = ETCe +ETarm *(+.5*first -0.28867513*second)
+#     ET3     = ETCe +ETarm *(+0.57735027*second)
 
+#     ## And these are the arms
+#     ETarm1  = (+.5*first -0.28867513*second) -(-.5*first -0.28867513*second)
+#     ETarm2  = (+0.57735027*second) -(+.5*first -0.28867513*second)
+#     ETarm3  = (-.5*first -0.28867513*second) -(+0.57735027*second)
+
+#     ETarm1_ = ETarm1 / np.linalg.norm(ETarm1)
+#     ETarm2_ = ETarm2 / np.linalg.norm(ETarm2)
+#     ETarm3_ = ETarm3 / np.linalg.norm(ETarm3)
+    
+#     return ETCe, ET1, ET2, ET3, ETarm1_, ETarm2_, ETarm3_, ETarm
 
 # def ET_A():
-#     xA, xB, xC, lBA, lCA, lBC, LISAarm = ET_arms()
-#     return xA, lBA, lCA, LISAarm, "ET A"
+#     ETCe, ET1, ET2, ET3, ETarm1_, ETarm2_, ETarm3_, ETarm = ET_arms()
+#     return ET1, ETarm1_, ETarm3_, ETarm, "ET A"
 
 # def ET_B():
-#     xA, xB, xC, lBA, lCA, lBC, LISAarm = ET_arms()
-#     return xB, -lBC, -lBA, LISAarm, "ET B"
+#     ETCe, ET1, ET2, ET3, ETarm1_, ETarm2_, ETarm3_, ETarm= ET_arms()
+#     return ET2, ETarm2_, ETarm1_, ETarm, "ET B"
 
 # def ET_C():
-#     xA, xB, xC, lBA, lCA, lBC, LISAarm = ET_arms()
-#     return xC, -lCA, lBC, LISAarm, "ET C"
+#     ETCe, ET1, ET2, ET3, ETarm1_, ETarm2_, ETarm3_, ETarm = ET_arms()
+#     return ET3, ETarm3_, ETarm2_, ETarm, "ET C"
+
+
+
+def ET_arms():
+    xA = np.array([0.,0.,0.])
+    xB = np.array([+1/2., np.sqrt(3)/2, 0])
+    xC = np.array([-1/2, np.sqrt(3)/2, 0])
+    lBA = xB - xA
+    lCA = xC - xA
+    lBC = xB - xC
+    ETarm = 1e4 #m
+
+    return xA, xB, xC, lBA, lCA, lBC, ETarm
+
+
+def ET_A():
+    xA, xB, xC, lBA, lCA, lBC, ETarm = ET_arms()
+    return xA*ETarm, lBA, lCA, ETarm, "ET A"
+
+def ET_B():
+    xA, xB, xC, lBA, lCA, lBC, ETarm = ET_arms()
+    return xB*ETarm, -lBC, -lBA, ETarm, "ET B"
+
+def ET_C():
+    xA, xB, xC, lBA, lCA, lBC, ETarm = ET_arms()
+    return xC*ETarm, -lCA, lBC, ETarm, "ET C"
 
 # LISA arms
 
@@ -410,18 +413,18 @@ def detector_Pn(det_name):
         'LIGO L': 'aligo_design.txt',
         'Virgo':  'advirgo.txt',
         'KAGRA':  'kagra.txt',
-        'ET L1':  '18213_ET20kmcolumns.txt', #'ET_Sh_coba.txt',
-        'ET L2':  '18213_ET20kmcolumns.txt', #'ET_Sh_coba.txt',
-        'ET A':   '18213_ET20kmcolumns.txt', #'ET_Sh_coba.txt',
-        'ET B':   '18213_ET20kmcolumns.txt', #'ET_Sh_coba.txt',
-        'ET C':   '18213_ET20kmcolumns.txt', #'ET_Sh_coba.txt',
+        'ET L1':  '18213_ET15kmcolumns.txt',
+        'ET L2':  '18213_ET15kmcolumns.txt',
+        'ET A':   'ET_Sh_coba.txt',
+        'ET B':   'ET_Sh_coba.txt',
+        'ET C':   'ET_Sh_coba.txt',
         'CE':     'ce1.txt',
         'LISA 1': 'lisa_noise.txt',
         'LISA 2': 'lisa_noise.txt',
         'LISA 3': 'lisa_noise.txt'
     }
 
-    if det_name.startswith('ET'):
+    if det_name.startswith('ET L'):
         file_name = file_map[det_name]
         f, Pn = np.loadtxt(base_path + file_name, delimiter= None, usecols=(0,3), unpack=True)
         return f, Pn

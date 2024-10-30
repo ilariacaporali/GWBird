@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from multiprocessing import Pool
-from _old import overlap_old
+from nest import overlap_try as overlap
 from nest import detectors   
 from astropy.cosmology import Planck15
 
@@ -21,7 +21,7 @@ def Omega_GW(f_i, PnI, PnJ, orfIJ, beta, fref, snr, Tobs):
     return Omega_beta(f_i, PnI, PnJ, orfIJ, beta, fref, snr, Tobs) * ((f_i/fref)**(beta))
 
 def all_Omega_GW(f_i, PnI, PnJ, orfIJ, beta_min, beta_max, fref, snr, Tobs):
-    beta = np.linspace(beta_min, beta_max, 100)
+    beta = np.linspace(beta_min, beta_max, 200)
     Omega = []
     for i in range(len(beta)):
         Omega.append(Omega_GW(f_i, PnI, PnJ, orfIJ, beta[i], fref, snr, Tobs))
@@ -46,13 +46,13 @@ def find_pls_t(which_det1, which_det2, beta_min, beta_max, fref, snr, Tobs, shif
         f_i = fi
 
     if (which_det1 == 'LISA 1' and which_det2 == 'LISA 1') or (which_det1 == 'LISA 2' and which_det2 == 'LISA 2') or (which_det1 == 'LISA 3' and which_det2 == 'LISA 3'):
-        XX = overlap_old.overlap_transfer('LISA 1', 'LISA 1', f_i, 0, 't')#[0]  # auto
-        XY = overlap_old.overlap_transfer('LISA 1', 'LISA 2', f_i, 0, 't')#[0]  # cross
+        XX = overlap.overlap_transfer('LISA 1', 'LISA 1', f_i, 0, 't')#[0]  # auto
+        XY = overlap.overlap_transfer('LISA 1', 'LISA 2', f_i, 0, 't')#[0]  # cross
         # the overlap is evaluated in the diagonal basis
         orfIJ = (np.array(XX) - np.array(XY))*(2/5) 
 
     else: 
-        orfIJ = overlap_old.overlap(which_det1, which_det2, f_i, 0 ,'t', shift_angle)
+        orfIJ = overlap.overlap(which_det1, which_det2, f_i, 0 ,'t', shift_angle)
     
     beta, Omega = all_Omega_GW(f_i, PnI, PnJ, orfIJ, beta_min, beta_max, fref, snr, Tobs)
     pls = np.zeros(len(f_i))
@@ -78,14 +78,14 @@ def find_pls_v(which_det1, which_det2, beta_min, beta_max, fref, snr, Tobs, shif
         f_i = fi
 
     if (which_det1 == 'LISA 1' and which_det2 == 'LISA 1') or (which_det1 == 'LISA 2' and which_det2 == 'LISA 2') or (which_det1 == 'LISA 3' and which_det2 == 'LISA 3'):
-        XX = overlap_old.overlap_transfer('LISA 1', 'LISA 1', f_i, 0, 'v')#[1]  # auto
-        XY = overlap_old.overlap_transfer('LISA 1', 'LISA 2', f_i, 0, 'v')#[1]  # cross
+        XX = overlap.overlap('LISA 1', 'LISA 1', f, 0, 't', None)#[1]  # auto
+        XY = overlap.overlap('LISA 1', 'LISA 1', f, 0, 't', None)#[1]  # cross
         # the overlap is evaluated in the diagonal basis
         orfIJ = (np.array(XX) - np.array(XY))*(2/5)
         #fix this to take only the tensor modes
 
     else: 
-        orfIJ = overlap_old.overlap(which_det1, which_det2, f_i, 0 ,'v', shift_angle)
+        orfIJ = overlap.overlap(which_det1, which_det2, f_i, 0 ,'v', shift_angle)
     
     beta, Omega = all_Omega_GW(f_i, PnI, PnJ, orfIJ, beta_min, beta_max, fref, snr, Tobs)
     pls = np.zeros(len(f_i))
@@ -111,14 +111,14 @@ def find_pls_s(which_det1, which_det2, beta_min, beta_max, fref, snr, Tobs, shif
         f_i = fi
 
     if (which_det1 == 'LISA 1' and which_det2 == 'LISA 1') or (which_det1 == 'LISA 2' and which_det2 == 'LISA 2') or (which_det1 == 'LISA 3' and which_det2 == 'LISA 3'):
-        XX = overlap_old.overlap_transfer('LISA 1', 'LISA 1', f_i, 0, 's')  # auto
-        XY = overlap_old.overlap_transfer('LISA 1', 'LISA 2', f_i, 0, 's')  # cross
+        XX = overlap.overlap_transfer('LISA 1', 'LISA 1', f_i, 0, 's')  # auto
+        XY = overlap.overlap_transfer('LISA 1', 'LISA 2', f_i, 0, 's')  # cross
         # the overlap is evaluated in the diagonal basis
         orfIJ = (np.array(XX) - np.array(XY))*(2/5) 
         #fix this to take only the tensor modes
 
     else: 
-        orfIJ = overlap_old.overlap(which_det1, which_det2, f_i, 0 ,'s', shift_angle)
+        orfIJ = overlap.overlap(which_det1, which_det2, f_i, 0 ,'s', shift_angle)
     
     beta, Omega = all_Omega_GW(f_i, PnI, PnJ, orfIJ, beta_min, beta_max, fref, snr, Tobs)
     pls = np.zeros(len(f_i))
