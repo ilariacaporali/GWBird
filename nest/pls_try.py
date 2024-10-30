@@ -21,7 +21,7 @@ def Omega_GW(f_i, PnI, PnJ, orfIJ, beta, fref, snr, Tobs):
     return Omega_beta(f_i, PnI, PnJ, orfIJ, beta, fref, snr, Tobs) * ((f_i/fref)**(beta))
 
 def all_Omega_GW(f_i, PnI, PnJ, orfIJ, beta_min, beta_max, fref, snr, Tobs):
-    beta = np.linspace(beta_min, beta_max, 200)
+    beta = np.linspace(beta_min, beta_max, 1000)
     Omega = []
     for i in range(len(beta)):
         Omega.append(Omega_GW(f_i, PnI, PnJ, orfIJ, beta[i], fref, snr, Tobs))
@@ -38,10 +38,10 @@ def find_pls_t(which_det1, which_det2, f, beta_min, beta_max, fref, snr, Tobs, s
 
 
     if (which_det1 == 'LISA 1' and which_det2 == 'LISA 1') or (which_det1 == 'LISA 2' and which_det2 == 'LISA 2') or (which_det1 == 'LISA 3' and which_det2 == 'LISA 3'):
-        XX = overlap.overlap_transfer('LISA 1', 'LISA 1', f, 0, 't')#[0]  # auto
-        XY = overlap.overlap_transfer('LISA 1', 'LISA 2', f, 0, 't')#[0]  # cross
+        XX = overlap.overlap('LISA 1', 'LISA 1', f, 0, 't')#[0]  # auto
+        XY = overlap.overlap('LISA 1', 'LISA 2', f, 0, 't')#[0]  # cross
         # the overlap is evaluated in the diagonal basis
-        orfIJ = (np.array(XX) - np.array(XY))*(2/5) 
+        orfIJ = (np.array(XX) - 2*np.array(XY))
 
     else: 
         orfIJ = overlap.overlap(which_det1, which_det2, f, 0 ,'t', shift_angle)
