@@ -28,7 +28,7 @@ def all_Omega_GW(f_i, PnI, PnJ, orfIJ, beta_min, beta_max, fref, snr, Tobs):
         
     return beta, np.array(Omega)
 
-def find_pls_t(which_det1, which_det2, f, beta_min, beta_max, fref, snr, Tobs, shift_angle):
+def find_pls(which_det1, which_det2, f, pol,  beta_min, beta_max, fref, snr, Tobs, shift_angle):
     
     fi, PnI = detectors.detector_Pn(which_det1)
     fj, PnJ = detectors.detector_Pn(which_det2)
@@ -38,13 +38,13 @@ def find_pls_t(which_det1, which_det2, f, beta_min, beta_max, fref, snr, Tobs, s
 
 
     if (which_det1 == 'LISA 1' and which_det2 == 'LISA 1') or (which_det1 == 'LISA 2' and which_det2 == 'LISA 2') or (which_det1 == 'LISA 3' and which_det2 == 'LISA 3'):
-        XX = overlap.overlap('LISA 1', 'LISA 1', f, 0, 't')#[0]  # auto
-        XY = overlap.overlap('LISA 1', 'LISA 2', f, 0, 't')#[0]  # cross
+        XX = overlap.overlap('LISA 1', 'LISA 1', f, 0, pol)#[0]  # auto
+        XY = overlap.overlap('LISA 1', 'LISA 2', f, 0, pol)#[0]  # cross
         # the overlap is evaluated in the diagonal basis
         orfIJ = (np.array(XX) - 2*np.array(XY))
 
     else: 
-        orfIJ = overlap.overlap(which_det1, which_det2, f, 0 ,'t', shift_angle)
+        orfIJ = overlap.overlap(which_det1, which_det2, f, 0 , pol, shift_angle)
     
     beta, Omega = all_Omega_GW(f, PnI, PnJ, orfIJ, beta_min, beta_max, fref, snr, Tobs)
     
@@ -54,11 +54,12 @@ def find_pls_t(which_det1, which_det2, f, beta_min, beta_max, fref, snr, Tobs, s
         pls[i] = np.max(Omega[:,i])
     return pls
 
-def find_pls_weighted_t(which_det1, which_det2, f, beta_min, beta_max, fref, snr, Tobs, shift_angle):
 
-    pls1 = find_pls_t(which_det1, which_det2, f, beta_min, beta_max, fref, snr, Tobs, shift_angle)
-    pls2 = find_pls_t(which_det2, which_det1, f, beta_min, beta_max, fref, snr, Tobs, shift_angle)
-    pls3 = find_pls_t(which_det1, which_det1, f, beta_min, beta_max, fref, snr, Tobs, shift_angle)
+def find_pls_weighted(which_det1, which_det2, f, pol, beta_min, beta_max, fref, snr, Tobs, shift_angle):
+
+    pls1 = find_pls(which_det1, which_det2, f, pol, beta_min, beta_max, fref, snr, Tobs, shift_angle)
+    pls2 = find_pls(which_det2, which_det1, f, pol, beta_min, beta_max, fref, snr, Tobs, shift_angle)
+    pls3 = find_pls(which_det1, which_det1, f, pol, beta_min, beta_max, fref, snr, Tobs, shift_angle)
 
     return 1/( 1/pls1 + 1/pls2 + 1/pls3)
 
