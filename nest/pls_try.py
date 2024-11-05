@@ -9,10 +9,10 @@ cosmo = Planck15
 H0 =  cosmo.H0.to('1/s').value
 
 def Omega_eff(f, PnI, PnJ, orfIJ):
-    return ((10* np.pi**2)/(3* H0*H0)) * np.sqrt((f**6) *PnI * PnJ / (orfIJ**2))
+    return ((4*np.pi**2)/(3* H0*H0)) * np.sqrt((f**6) *PnI * PnJ / (orfIJ**2))
 
 def Omega_beta(f_range, PnI, PnJ, orfIJ, beta, fref, snr, Tobs):
-    Tobs = Tobs*365*24*3600
+    Tobs = Tobs*364*24*3600
     integrand = lambda f : ((f/fref)**(2*beta))/ (Omega_eff(f, PnI, PnJ, orfIJ)**2)
     integral = np.trapz(integrand(f_range), f_range)
     return snr / np.sqrt(2*Tobs*integral)
@@ -39,9 +39,12 @@ def find_pls(which_det1, which_det2, f, pol,  beta_min, beta_max, fref, snr, Tob
 
     if (which_det1 == 'LISA 1' and which_det2 == 'LISA 1') or (which_det1 == 'LISA 2' and which_det2 == 'LISA 2') or (which_det1 == 'LISA 3' and which_det2 == 'LISA 3'):
         XX = overlap.overlap('LISA 1', 'LISA 1', f, 0, pol)#[0]  # auto
+        print(XX[0])
         XY = overlap.overlap('LISA 1', 'LISA 2', f, 0, pol)#[0]  # cross
+        print(XY[0])
         # the overlap is evaluated in the diagonal basis
-        orfIJ = (np.array(XX) - 2*np.array(XY))
+        orfIJ = (np.array(XX) - np.array(XY))
+        print(orfIJ[0])
 
     else: 
         orfIJ = overlap.overlap(which_det1, which_det2, f, 0 , pol, shift_angle)
@@ -56,12 +59,8 @@ def find_pls(which_det1, which_det2, f, pol,  beta_min, beta_max, fref, snr, Tob
 
 
 def find_pls_weighted(which_det1, which_det2, f, pol, beta_min, beta_max, fref, snr, Tobs, shift_angle):
-
     pls1 = find_pls(which_det1, which_det2, f, pol, beta_min, beta_max, fref, snr, Tobs, shift_angle)
-    pls2 = find_pls(which_det2, which_det1, f, pol, beta_min, beta_max, fref, snr, Tobs, shift_angle)
-    pls3 = find_pls(which_det1, which_det1, f, pol, beta_min, beta_max, fref, snr, Tobs, shift_angle)
-
-    return 1/( 1/pls1 + 1/pls2 + 1/pls3)
+    return 1/( 3/pls1)
 
 
 
