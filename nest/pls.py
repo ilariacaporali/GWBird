@@ -1,236 +1,63 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from multiprocessing import Pool
-from nest import overlap_try as overlap
+from nest import overlap as overlap
 from nest import detectors   
-from astropy.cosmology import Planck15
+from astropy.cosmology import Planck18
+import matplotlib.cm as cm
+from scipy.integrate import simps
 
-cosmo = Planck15
+cosmo = Planck18
 H0 =  cosmo.H0.to('1/s').value
+h = 0.7
 
-def Omega_eff(f, PnI, PnJ, orfIJ):
-    return ((10 * np.pi**2)/(3* H0*H0)) * np.sqrt((f**6) *PnI * PnJ / (orfIJ**2))
 
-def Omega_beta(f_range, PnI, PnJ, orfIJ, beta, fref, snr, Tobs):
-    Tobs = Tobs*365*24*3600
-    integrand = lambda f : ((f/fref)**(2*beta))/ (Omega_eff(f, PnI, PnJ, orfIJ)**2)
-    integral = np.trapz(integrand(f_range), f_range)
-    return snr / np.sqrt(2*Tobs*integral)
+def Seff(f, fref, snr, Tobs, orf, Ni, Nj):
+    return np.sqrt(Ni*Nj)/orf
 
-def Omega_GW(f_i, PnI, PnJ, orfIJ, beta, fref, snr, Tobs):
-    return Omega_beta(f_i, PnI, PnJ, orfIJ, beta, fref, snr, Tobs) * ((f_i/fref)**(beta))
+def Omega_eff(f, fref, snr, Tobs, orf, Ni, Nj):
+    return 10* np.pi**2 /(3* (H0**2)/(h**2))* f**3 * Seff(f, fref, snr, Tobs, orf, Ni, Nj)
+    
+def Omega_beta(f, fref, snr, Tobs, beta, orf, Ni, Nj):
+    Tobs = Tobs * 365 * 24 * 3600
+    Omega_eff_num = Omega_eff(f, fref, snr, Tobs, orf, Ni, Nj)
+    integrand = (((f/fref)**(beta)) / (Omega_eff_num))**2
+    integral = simps(integrand, f)
+    return  snr /np.sqrt(2*Tobs)/np.sqrt(integral)
 
-def all_Omega_GW(f_i, PnI, PnJ, orfIJ, beta_min, beta_max, fref, snr, Tobs):
-    beta = np.linspace(beta_min, beta_max, 200)
+def Omega_GW(f, fref, snr, Tobs, beta, orf, Ni, Nj):
+    return Omega_beta(f, fref, snr, Tobs, beta, orf, Ni, Nj) * ((f/fref)**(beta))
+
+def all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, orf, Ni, Nj):
+    beta = np.linspace(beta_min, beta_max, 1000)
     Omega = []
     for i in range(len(beta)):
-        Omega.append(Omega_GW(f_i, PnI, PnJ, orfIJ, beta[i], fref, snr, Tobs))
-        
+        Omega.append(Omega_GW(f, fref, snr, Tobs, beta[i], orf, Ni, Nj))     
     return beta, np.array(Omega)
 
-def find_pls_t(which_det1, which_det2, beta_min, beta_max, fref, snr, Tobs, shift_angle):
-    
+def PLS(which_det1, which_det2, f, fref, pol, snr, Tobs, beta_min, beta_max, shift_angle):
+
     fi, PnI = detectors.detector_Pn(which_det1)
     fj, PnJ = detectors.detector_Pn(which_det2)
-    
-    if fi[0] != fj[0] or fi[-1] != fj[-1]: # find the common frequency range
-        if (fi[0] > fj[0] and fi[-1]<fj[-1]):
-            f_i = fi
-        elif (fi[0] < fj[0] and fi[-1]>fj[-1]):
-            f_i = fj
-        else:
-            f_i = np.arange(max(fi[0], fj[0]), min(fi[-1], fj[-1]), 1e-9)
-            PnI = np.interp(f_i, fi, PnI)
-            PnJ = np.interp(f_i, fj, PnJ)
-    else:
-        f_i = fi
+
+    PnI = np.interp(f, fi, PnI)
+    PnJ = np.interp(f, fj, PnJ)
 
     if (which_det1 == 'LISA 1' and which_det2 == 'LISA 1') or (which_det1 == 'LISA 2' and which_det2 == 'LISA 2') or (which_det1 == 'LISA 3' and which_det2 == 'LISA 3'):
-        XX = overlap.overlap_transfer('LISA 1', 'LISA 1', f_i, 0, 't')#[0]  # auto
-        XY = overlap.overlap_transfer('LISA 1', 'LISA 2', f_i, 0, 't')#[0]  # cross
+        XX = overlap.overlap('LISA 1', 'LISA 1', f, 0, pol)#[0]  # auto
+        print(XX[0])
+        XY = overlap.overlap('LISA 1', 'LISA 2', f, 0, pol)#[0]  # cross
+        print(XY[0])
         # the overlap is evaluated in the diagonal basis
-        orfIJ = (np.array(XX) - np.array(XY))*(2/5) 
-
-    else: 
-        orfIJ = overlap.overlap(which_det1, which_det2, f_i, 0 ,'t', shift_angle)
+        orfIJ = (np.array(XX) - np.array(XY))*(5/2)
+        print(orfIJ[0])
     
-    beta, Omega = all_Omega_GW(f_i, PnI, PnJ, orfIJ, beta_min, beta_max, fref, snr, Tobs)
-    pls = np.zeros(len(f_i))
-    for i in range(len(f_i)):
-        pls[i] = np.max(Omega[:,i])
-    return f_i, pls, beta, Omega
-
-def find_pls_v(which_det1, which_det2, beta_min, beta_max, fref, snr, Tobs, shift_angle):
-    
-    fi, PnI = detectors.detector_Pn(which_det1)
-    fj, PnJ = detectors.detector_Pn(which_det2)
-    
-    if fi[0] != fj[0] or fi[-1] != fj[-1]: # find the common frequency range
-        if (fi[0] > fj[0] and fi[-1]<fj[-1]):
-            f_i = fi
-        elif (fi[0] < fj[0] and fi[-1]>fj[-1]):
-            f_i = fj
-        else:
-            f_i = np.arange(max(fi[0], fj[0]), min(fi[-1], fj[-1]), 1e-9)
-            PnI = np.interp(f_i, fi, PnI)
-            PnJ = np.interp(f_i, fj, PnJ)
     else:
-        f_i = fi
+        orfIJ = overlap.overlap(which_det1, which_det2, f, 0 , pol, shift_angle )
 
-    if (which_det1 == 'LISA 1' and which_det2 == 'LISA 1') or (which_det1 == 'LISA 2' and which_det2 == 'LISA 2') or (which_det1 == 'LISA 3' and which_det2 == 'LISA 3'):
-        XX = overlap.overlap('LISA 1', 'LISA 1', f, 0, 't', None)#[1]  # auto
-        XY = overlap.overlap('LISA 1', 'LISA 1', f, 0, 't', None)#[1]  # cross
-        # the overlap is evaluated in the diagonal basis
-        orfIJ = (np.array(XX) - np.array(XY))*(2/5)
-        #fix this to take only the tensor modes
-
-    else: 
-        orfIJ = overlap.overlap(which_det1, which_det2, f_i, 0 ,'v', shift_angle)
-    
-    beta, Omega = all_Omega_GW(f_i, PnI, PnJ, orfIJ, beta_min, beta_max, fref, snr, Tobs)
-    pls = np.zeros(len(f_i))
-    for i in range(len(f_i)):
+    beta, Omega = all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, orfIJ, PnI, PnJ)
+    print(Omega.shape)
+    pls = np.zeros(len(f))
+    for i in range(len(f)):
         pls[i] = np.max(Omega[:,i])
-    return f_i, pls, beta, Omega
-
-def find_pls_s(which_det1, which_det2, beta_min, beta_max, fref, snr, Tobs, shift_angle):
-    
-    fi, PnI = detectors.detector_Pn(which_det1)
-    fj, PnJ = detectors.detector_Pn(which_det2)
-    
-    if fi[0] != fj[0] or fi[-1] != fj[-1]: # find the common frequency range
-        if (fi[0] > fj[0] and fi[-1]<fj[-1]):
-            f_i = fi
-        elif (fi[0] < fj[0] and fi[-1]>fj[-1]):
-            f_i = fj
-        else:
-            f_i = np.arange(max(fi[0], fj[0]), min(fi[-1], fj[-1]), 1e-9)
-            PnI = np.interp(f_i, fi, PnI)
-            PnJ = np.interp(f_i, fj, PnJ)
-    else:
-        f_i = fi
-
-    if (which_det1 == 'LISA 1' and which_det2 == 'LISA 1') or (which_det1 == 'LISA 2' and which_det2 == 'LISA 2') or (which_det1 == 'LISA 3' and which_det2 == 'LISA 3'):
-        XX = overlap.overlap_transfer('LISA 1', 'LISA 1', f_i, 0, 's')  # auto
-        XY = overlap.overlap_transfer('LISA 1', 'LISA 2', f_i, 0, 's')  # cross
-        # the overlap is evaluated in the diagonal basis
-        orfIJ = (np.array(XX) - np.array(XY))*(2/5) 
-        #fix this to take only the tensor modes
-
-    else: 
-        orfIJ = overlap.overlap(which_det1, which_det2, f_i, 0 ,'s', shift_angle)
-    
-    beta, Omega = all_Omega_GW(f_i, PnI, PnJ, orfIJ, beta_min, beta_max, fref, snr, Tobs)
-    pls = np.zeros(len(f_i))
-    for i in range(len(f_i)):
-        pls[i] = np.max(Omega[:,i])
-    return f_i, pls, beta, Omega
-
-def find_pls_weighted_t(which_det1, which_det2, beta_min, beta_max, fref, snr, Tobs, shift_angle):
-
-    pls1 = find_pls_t(which_det1, which_det2, beta_min, beta_max, fref, snr, Tobs, shift_angle)
-    pls2 = find_pls_t(which_det2, which_det1, beta_min, beta_max, fref, snr, Tobs, shift_angle)
-    pls3 = find_pls_t(which_det1, which_det1, beta_min, beta_max, fref, snr, Tobs, shift_angle)
-
-    return pls1[0], 1/( 1/pls1[1] + 1/pls2[1] + 1/pls3[1])
-
-def find_pls_weighted_v(which_det1, which_det2, beta_min, beta_max, fref, snr, Tobs, shift_angle):
-
-    pls1 = find_pls_v(which_det1, which_det2, beta_min, beta_max, fref, snr, Tobs, shift_angle)
-    pls2 = find_pls_v(which_det2, which_det1, beta_min, beta_max, fref, snr, Tobs, shift_angle)
-    pls3 = find_pls_v(which_det1, which_det1, beta_min, beta_max, fref, snr, Tobs, shift_angle)
-
-    return pls1[0], 1/( 1/pls1[1] + 1/pls2[1] + 1/pls3[1])
-
-def find_pls_weighted_s(which_det1, which_det2, beta_min, beta_max, fref, snr, Tobs, shift_angle):
-
-    pls1 = find_pls_s(which_det1, which_det2, beta_min, beta_max, fref, snr, Tobs, shift_angle)
-    pls2 = find_pls_s(which_det2, which_det1, beta_min, beta_max, fref, snr, Tobs, shift_angle)
-    pls3 = find_pls_s(which_det1, which_det1, beta_min, beta_max, fref, snr, Tobs, shift_angle)
-
-    return pls1[0], (1/( 1/pls1[1] + 1/pls2[1] + 1/pls3[1]))
-
-
-
-
-
-
-# *************** binned pls *************** #
-
-def find_pls_chunks(f_i, PnI, PnJ, orfIJ, beta_min, beta_max, fref, snr, Tobs, chunk_size):
-    num_chunks = int(np.ceil(len(f_i) / chunk_size))
-    pls_chunks = np.zeros((num_chunks, len(f_i)))
-
-    for i in range(num_chunks):
-        start_idx = i * chunk_size
-        end_idx = min((i + 1) * chunk_size, len(f_i))
-        f_chunk = f_i[start_idx:end_idx]
-        PnI_chunk = PnI[start_idx:end_idx]
-        PnJ_chunk = PnJ[start_idx:end_idx]
-        orfIJ_chunk = orfIJ[start_idx:end_idx]
-
-        beta, Omega_chunk = all_Omega_GW(f_chunk, PnI_chunk, PnJ_chunk, orfIJ_chunk, beta_min, beta_max, fref, snr, Tobs)
-        
-        for j in range(len(f_chunk)):
-            pls_chunks[i, start_idx + j] = np.max(Omega_chunk[:, j])
-            
-    pls = np.zeros(len(f_i))
-    for i in range(len(f_i)):
-        pls[i] = np.max(pls_chunks[:, i])
     return pls
-
-
-#************************* PTA *************************#
-
-def PTA_Pn():
-    DT_inverse = 20/(365*24*3600) #Hz
-    s = 100 * 1e-9 #s
-    return 2* (s**2)/DT_inverse
-
-
-def PTA_Sn(f):
-    f = np.asarray(f) # Ensure f is a NumPy array
-    mask = f >= 8e-9 # Create a boolean mask where True indicates elements greater than or equal to 8e-9
-    return np.where(mask, PTA_Pn() * 12 * (np.pi**2) * f**2, 1) # Apply the mask to the result
-
-def PTA_Seff(f, catalogue):
-    hd = 0
-    for i in range(len(catalogue)):
-        for j in range(i+1, len(catalogue)):
-            hd += (overlap_old.HellingsDowns(catalogue[i], catalogue[j]))**2
-    return hd*PTA_Sn(f)
-
-def PTA_Omegaeff(f, catalogue, om_load):
-    if om_load==False:
-        return 10 * np.pi * np.pi * f**3 * PTA_Seff(f, catalogue) / (3* (H0**2))
-    else:
-        return np.genfromtxt('/home/ilaria/Desktop/morfeus/pypack/Omegaeff.txt', unpack=True, usecols=1)
-
-def Omega_beta_PTA(f_range, snr, Tobs, beta, catalogue, om_load):
-    Tobs = Tobs*365*24*3600
-    fref = 1e-8
-    integrand = lambda f : ((f/fref)**(2*beta))/ (PTA_Omegaeff(f, catalogue, om_load)**2)
-    integral = np.trapz(integrand(f_range), f_range)
-    return snr / np.sqrt(2*Tobs*integral)
-
-def Omega_GW_PTA(f_i,  beta, fref, snr, Tobs, catalogue, om_load):
-    return Omega_beta_PTA(f_i, snr, Tobs, beta, catalogue, om_load) * ((f_i/fref)**(beta))
-
-def all_Omega_GW_PTA(f_i, snr, Tobs, beta_min, beta_max, catalogue, om_load):
-    beta = np.linspace(beta_min, beta_max, 100)
-    fref = 1e-8
-    Omega = np.zeros((len(beta), len(f_i)))
-    for i, beta_val in enumerate(beta):
-        Omega[i, :] = Omega_GW_PTA(f_i, beta_val, fref, snr, Tobs, catalogue, om_load)
-    return beta, Omega
-
-def find_pls_PTA(f_i, snr, Tobs, beta_min, beta_max, catalogue, om_load):
-
-    beta, Omega = all_Omega_GW_PTA(f_i, snr, Tobs, beta_min, beta_max, catalogue, om_load)
-    pls = np.max(Omega, axis=0)
-    return pls
-
-        
-    
-
- 
