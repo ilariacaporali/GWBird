@@ -8,8 +8,10 @@ from astropy.cosmology import Planck15
 cosmo = Planck15
 H0 =  cosmo.H0.to('1/s').value
 
+h = 0.7
+
 def Omega_eff(f, PnI, PnJ, orfIJ):
-    return ((4*np.pi**2)/(3* H0*H0)) * np.sqrt((f**6) *PnI * PnJ / (orfIJ**2))
+    return 10* np.pi**2 /(3* (H0**2)/(h**2)) * np.sqrt((f**6) *PnI * PnJ / (orfIJ**2))
 
 def Omega_beta(f_range, PnI, PnJ, orfIJ, beta, fref, snr, Tobs):
     Tobs = Tobs*364*24*3600
