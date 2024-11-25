@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from multiprocessing import Pool
 from nest import overlap as overlap
 from nest import detectors   
+from nest import nell
 from astropy.cosmology import Planck18
 import matplotlib.cm as cm
 from scipy.integrate import simps
@@ -13,12 +14,27 @@ h = 0.7
 
 
 def S_eff(f, fref, snr, Tobs, orf, Ni, Nj):
+
+    '''
+    Effective noise power spectral density
+    '''
+
     return np.sqrt(Ni*Nj)/np.abs(orf)
 
 def Omega_eff(f, fref, snr, Tobs, orf, Ni, Nj):
+    
+    '''
+    Effective energy density
+    '''
+
     return 10* np.pi**2 /(3* (H0**2)/(h**2))* f**3 * S_eff(f, fref, snr, Tobs, orf, Ni, Nj)
     
 def Omega_beta(f, fref, snr, Tobs, beta, orf, Ni, Nj):
+
+    '''
+    Energy density for a given beta
+    '''
+
     Tobs = Tobs * 365 * 24 * 3600
     Omega_eff_num = Omega_eff(f, fref, snr, Tobs, orf, Ni, Nj)
     integrand = (((f/fref)**(beta)) / (Omega_eff_num))**2
@@ -26,9 +42,19 @@ def Omega_beta(f, fref, snr, Tobs, beta, orf, Ni, Nj):
     return  snr /np.sqrt(2*Tobs)/np.sqrt(integral)
 
 def Omega_GW(f, fref, snr, Tobs, beta, orf, Ni, Nj):
+
+    '''
+    Power spectral density of the GW signal
+    '''
+
     return Omega_beta(f, fref, snr, Tobs, beta, orf, Ni, Nj) * ((f/fref)**(beta))
 
 def all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, orf, Ni, Nj):
+
+    '''
+    Power spectral density of the GW signal for a range of beta values
+    '''
+
     beta = np.linspace(beta_min, beta_max, 1000)
     Omega = []
     for i in range(len(beta)):
@@ -36,6 +62,17 @@ def all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, orf, Ni, Nj):
     return beta, np.array(Omega)
 
 def PLS(det1, det2, f, fref, pol, snr, Tobs, beta_min, beta_max, shift_angle):
+
+    '''
+    det1, det2: detectors (string)
+    f: frequency array (array float)
+    fref: reference frequency (float)
+    pol: polarization mode (string)
+    snr: signal-to-noise ratio threshold (float)
+    Tobs: observation time (float) - in YEARS
+    beta_min, beta_max: range of beta values (float)
+    shift_angle: shift angle (None or float)
+    '''
 
     fi, PnI = detectors.detector_Pn(det1)
     fj, PnJ = detectors.detector_Pn(det2)
@@ -53,6 +90,23 @@ def PLS(det1, det2, f, fref, pol, snr, Tobs, beta_min, beta_max, shift_angle):
         orfIJ = overlap.Response.overlap(det1, det2, f, 0 , pol, shift_angle )
 
     beta, Omega = all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, orfIJ, PnI, PnJ)
+
+    pls = np.zeros(len(f))
+    for i in range(len(f)):
+        pls[i] = np.max(Omega[:,i])
+    return pls
+
+def PLS_l(det1, det2, l, f, fref, pol, snr, Tobs, beta_min, beta_max, shift_angle):
+
+    fi, PnI = detectors.detector_Pn(det1)
+    fj, PnJ = detectors.detector_Pn(det2)
+
+    PnI = np.interp(f, fi, PnI)
+    PnJ = np.interp(f, fj, PnJ)
+
+    Rl =  nell.AngularResponse.R_ell(l, det1, det2, f, pol, shift_angle)
+
+    beta, Omega = all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, Rl, PnI, PnJ)
 
     pls = np.zeros(len(f))
     for i in range(len(f)):

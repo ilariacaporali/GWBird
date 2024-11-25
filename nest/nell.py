@@ -1,21 +1,23 @@
-import jax
-from jax import jit
-import jax.numpy as np
-import numpy
+import numpy as np
 from numpy import cos, sin, pi, sqrt, arctan2
 from nest import detectors as det
+
+from mpmath import mp, mpc, quad
+from scipy.integrate import simps
+
 from nest import pls
-from nest import overlap
+from nest.skymap import AngularPatternFunction
 
 import matplotlib.pyplot as plt
 from scipy.special import sph_harm
 import mpmath as mp
+
 from astropy.cosmology import Planck18
 
 cosmo = Planck18
 H0 =  cosmo.H0.to('1/s').value
 
-c = 3e8 #m/s
+c = 299792458 # speed of light
 
 
 # angular overlap redunction function - angular response
@@ -23,8 +25,14 @@ c = 3e8 #m/s
 class AngularResponse:
     @staticmethod
     def Rellm_integrand(l, m, x, y, psi, c1, u1, v1, c2, u2, v2, c, f, pol, L):
-        F1 = overlap.AngularPatternFunction.F(x, y, psi, c1, u1, v1, f, L)
-        F2 = overlap.AngularPatternFunction.F(x, y, psi, c2, u2, v2, f, L)
+        
+        '''
+        Integrand of the anisotropic response function
+        # refs: Bartolo et al. 2022 
+        '''
+        
+        F1 = AngularPatternFunction.F(x, y, psi, c1, u1, v1, f, L)
+        F2 = AngularPatternFunction.F(x, y, psi, c2, u2, v2, f, L)
         f = f.reshape(len(f), 1, 1)
         sph_harm_val = sph_harm(m, l, y, x)
         if pol == 't':
@@ -34,23 +42,36 @@ class AngularResponse:
         elif pol == 's':
             return (15 / (4 * pi)) * (F1[4] * np.conj(F2[4])) * sph_harm_val * sqrt(4 * pi) * sin(x)
 
-    @staticmethod
+    # @staticmethod
     def Rellm(l, m, u1, v1, c1, u2, v2, c2, psi, f, pol, L):
-        mp.dps = 50  # Imposta la precisione desiderata
+        
+        '''
+        Integral of the anisotropic response function
+        '''
+        
+        mp.dps = 100  
 
         x_values = np.linspace(0, pi, 100)
         y_values = np.linspace(0, 2*pi, 100)
         X, Y = np.meshgrid(x_values,y_values) 
         f_values = AngularResponse.Rellm_integrand(l, m, X, Y, psi, c1, u1, v1, c2, u2, v2, c, f, pol, L)
 
-        gamma_x = numpy.trapz(f_values, x_values.reshape(1, 100, 1), axis=1)
-        gamma = numpy.trapz(gamma_x, y_values.reshape(1, 1, 100))
-
-        gamma = gamma.reshape(len(f))
-        return gamma
+        gamma_x = np.trapz(f_values, x_values.reshape(1, 100, 1), axis=1)
+        gamma = np.trapz(gamma_x, y_values.reshape(1, 1, 100))
+        real_part = np.array([mp.mpf(x.real) for row in gamma for x in row])
+        imag_part = np.array([mp.mpf(x.imag) for row in gamma for x in row])
+        # Converti gli array di mpf in array di float
+        real_part = np.array(real_part, dtype=np.float64)
+        imag_part = np.array(imag_part, dtype=np.float64)
+        return real_part + 1j*imag_part
 
 
     def R_ell_func(l, c1, u1, v1, c2, u2, v2, c, f, pol, L):
+        
+        '''
+        l dependent anisotropic response function
+        '''
+
         m_values = np.arange(-l, l+1)
         total = 0
         psi = 0 
@@ -59,7 +80,17 @@ class AngularResponse:
         return np.sqrt(total)
 
 
-    def R_ell(l, det1, det2, f, pol, shift_angle):
+    def R_ell(l, det1, det2, f, pol, shift_angle=False):
+        
+        '''
+        l = multipole order (int)
+        det1, det2: detectors (string)
+        f: frequency array (array float)
+        psi: polarization angle (float)
+        pol: polarization mode (string)
+        shift_angle: shift angle between detectors (None or float)
+        '''
+
         ec1, u1, v1, l1, which_det1 = det.detector(det1, shift_angle)
         ec2, u2, v2, l2, which_det2 = det.detector(det2, shift_angle)
         return AngularResponse.R_ell_func(l, ec1, u1, v1, ec2, u2, v2, c, f, pol, l1)
@@ -70,6 +101,15 @@ class AngularResponse:
 # LISA
 
     def R_ell_AET(l, channel, pol, f):
+
+        '''
+        l = multipole order (int)
+        channel: channel in the AET basis (string)
+        pol: polarization mode (string)
+        f: frequency array (array float)
+        '''
+
+        mp.dps = 100
 
         c1, u1, v1, L, name = det.detector('LISA 1', shift_angle=None)
         c2, u2, v2, L, name = det.detector('LISA 2', shift_angle=None)
@@ -154,19 +194,33 @@ class AngularResponse:
 
 class Sensitivity_ell:
     def Omega_ell(det1, det2, Rl, f):
+        # fix Rl
+        # fix in general
+
+        '''
+        det1, det2: detectors (string)
+        Rl: anisotropic response function (array float)
+        f: frequency array (array float)
+        '''
 
         fi, PnI = det.detector_Pn(det1)
         fj, PnJ = det.detector_Pn(det2)
 
-        Pni = numpy.interp(f, fi, PnI)
-        Pnj = numpy.interp(f, fj, PnJ)
+        Pni = np.interp(f, fi, PnI)
+        Pnj = np.interp(f, fj, PnJ)
 
         h = 0.7
-        Nl = 4 * np.pi**2 * numpy.sqrt(4*np.pi) / (3* (H0/h)**2) * f**3 * numpy.sqrt(Pni * Pnj) 
+        Nl = 4 * np.pi**2 * np.sqrt(4*np.pi) / (3* (H0/h)**2) * f**3 * np.sqrt(Pni * Pnj) 
 
-        return numpy.abs(Nl/Rl/numpy.sqrt(4* np.pi)*h**2)
+        return np.abs(Nl/Rl/np.sqrt(4* np.pi)*h**2)
 
     def Omega_ell_LISA(f, l, pol):
+
+        '''
+        f: frequency array (array float)
+        l: multipole order (int)
+        pol: polarization mode (string)
+        '''
 
         if l == 0:
 
