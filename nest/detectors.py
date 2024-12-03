@@ -1,6 +1,7 @@
 import numpy as np
 from numpy import pi, sin, cos
 from scipy.spatial.transform import Rotation as R
+from nest.utils import REarth
 
 #***************************************************************************************************************
 
@@ -35,34 +36,31 @@ class Rotations:
 
 class Observatories:
 
-    def __init__(self):
-        self.REarth = 6.371e6  # Raggio della Terra in metri
-
     # 2G detectors
 
     def LIGO_hanford(self):
-        c = np.array([-0.33827472, -0.60015338, 0.72483525]) * self.REarth
+        c = np.array([-0.33827472, -0.60015338, 0.72483525]) * REarth
         xA = np.array([-0.22389266154, 0.79983062746, 0.55690487831])
         xB = np.array([-0.91397818574, 0.02609403989, -0.40492342125])
         l = 4e3  # m
         return c, xA, xB, l, "LIGO Hanford"
 
     def LIGO_livingston(self):
-        c = np.array([-0.01163537, -0.8609929, 0.50848387]) * self.REarth
+        c = np.array([-0.01163537, -0.8609929, 0.50848387]) * REarth
         xA = np.array([-0.95457412153, -0.14158077340, -0.26218911324])
         xB = np.array([0.29774156894, -0.48791033647, -0.82054461286])
         l = 4e3  # m
         return c, xA, xB, l, "LIGO Livingston"
 
     def Virgo(self):
-        c = np.array([0.71166465, 0.13195706, 0.69001505]) * self.REarth
+        c = np.array([0.71166465, 0.13195706, 0.69001505]) * REarth
         xA = np.array([-0.701, 0.201, 0.684])
         xB = np.array([-0.0485, -0.971, 0.236])
         l = 3e3  # m
         return c, xA, xB, l, "Virgo"
 
     def KAGRA(self):
-        c = np.array([-0.59149285, 0.54570304, 0.59358605]) * self.REarth
+        c = np.array([-0.59149285, 0.54570304, 0.59358605]) * REarth
         xA = np.array([-0.390, -0.838, 0.382])
         xB = np.array([0.706, -0.00580, 0.709])
         l = 3e3  # m
@@ -101,7 +99,7 @@ class Observatories:
     # Einstein Telescope (ET) - L-shaped configuration
 
     def ET_L_sardinia(self):
-        c = np.array([0.7499728, 0.12438134, 0.64966921]) * self.REarth
+        c = np.array([0.7499728, 0.12438134, 0.64966921]) * REarth
         xA = np.array([-0.639881, -0.106494, 0.761506])
         xB = Rotations.rot_axis(xA, pi/2, c)
         l = 1.5e4
@@ -109,7 +107,7 @@ class Observatories:
 
     def ET_L_netherlands(self, shift_angle=None):
         c1, xA1, xB1, l, _ = self.ET_L_sardinia()
-        c2 = np.array([0.62969256, 0.06530073, 0.77409502]) * self.REarth
+        c2 = np.array([0.62969256, 0.06530073, 0.77409502]) * REarth
 
         xA2_int = Rotations.rot_axis(xA1, shift_angle, c1) if shift_angle else xA1
         xB2_int = Rotations.rot_axis(xB1, shift_angle, c1) if shift_angle else xB1
@@ -200,9 +198,9 @@ def detector_Pn(det_name):
         'ET B':   'ET_Sh_coba.txt',
         'ET C':   'ET_Sh_coba.txt',
         'CE':     'ce1.txt',
-        'LISA 1': 'lisa_noise.txt',
-        'LISA 2': 'lisa_noise.txt',
-        'LISA 3': 'lisa_noise.txt'
+        'LISA 1': 'lisa_noise.txt', # A channel
+        'LISA 2': 'lisa_noise.txt', # A channel
+        'LISA 3': 'lisa_noise.txt'  # A channel
     }
 
     if det_name.startswith('ET L'):
@@ -217,6 +215,44 @@ def detector_Pn(det_name):
 
     else:
         raise ValueError(f'Unknown detector name: {det_name}')
-    
 
+
+def LISA_noise_AET(f, channel):
+        L = 2.5*1e9 #m
+        c = 3*1e8 #m/s
+        P = 15
+        A = 3
+        pm = 1e-12 #m
+        fm = 1e-15 #m
+        
+        
+        def Poms(f):
+            return P*P * pm*pm * ( 1 + (2*1e-3/f)**4 )* (2*np.pi * f /c)**2
+
+        def Pacc(f):
+            return A*A * fm*fm * ( 1 + (0.4*1e-3/f)**2 ) * (1 + (f/(8*1e-3))**4 ) * (1/(2* np.pi*f))**4 * (2* np.pi* f /c)**2
+
+        def N_AA(f):
+            arg = 2*np.pi*f*L/c
+            return 8* np.sin(arg)**2 * (4* (1+ np.cos(arg) + np.cos(arg**2))*Pacc(f) + (2+ np.cos(arg))*Poms(f) )
+        
+        def N_TT(f):
+            arg = 2*np.pi*f*L/c
+            return 16* np.sin(arg)**2 * (2*(1- np.cos(arg))**2 * Pacc(f) + (1-np.cos(arg))* Poms(f) )
+        
+        def R_AA(f):
+            arg = 2*np.pi*f*L/c
+            return 16* np.sin(arg)**2 * arg**2 * (9/20 /(1 + 0.7*arg**2))
+        
+        def R_TT(f):
+            arg = 2*np.pi*f*L/c
+            return 16* np.sin(arg)**2 * arg**2 * (9* arg**6/20 /(1.8e3  + 0.7*arg**8))
+        
+        if channel == 'A' or channel== 'E':
+            return N_AA(f)/R_AA(f)
+        elif channel == 'T':
+            return N_TT(f)/R_TT(f)
+        else:
+            print('Channel not found')
+            return 0
     

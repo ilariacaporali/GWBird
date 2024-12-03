@@ -5,6 +5,7 @@ from nest import detectors as det
 from mpmath import mp, mpc, quad
 from scipy.integrate import simps
 
+from nest.detectors import LISA_noise_AET
 from nest import pls
 from nest.skymap import AngularPatternFunction
 
@@ -12,18 +13,13 @@ import matplotlib.pyplot as plt
 from scipy.special import sph_harm
 import mpmath as mp
 
-from astropy.cosmology import Planck18
-
-cosmo = Planck18
-H0 =  cosmo.H0.to('1/s').value
-
-c = 299792458 # speed of light
+from nest.utils import c, H0, h
 
 
 # angular overlap redunction function - angular response
 
 class AngularResponse:
-    @staticmethod
+
     def Rellm_integrand(l, m, x, y, psi, c1, u1, v1, c2, u2, v2, c, f, pol, L):
         
         '''
@@ -41,8 +37,9 @@ class AngularResponse:
             return (5 / (8 * pi)) * (F1[2] * np.conj(F2[2]) + F1[3] * np.conj(F2[3])) * sph_harm_val * sqrt(4 * pi) * sin(x)
         elif pol == 's':
             return (15 / (4 * pi)) * (F1[4] * np.conj(F2[4])) * sph_harm_val * sqrt(4 * pi) * sin(x)
+        else:
+            raise ValueError('Unknown polarization')
 
-    # @staticmethod
     def Rellm(l, m, u1, v1, c1, u2, v2, c2, psi, f, pol, L):
         
         '''
@@ -55,12 +52,10 @@ class AngularResponse:
         y_values = np.linspace(0, 2*pi, 100)
         X, Y = np.meshgrid(x_values,y_values) 
         f_values = AngularResponse.Rellm_integrand(l, m, X, Y, psi, c1, u1, v1, c2, u2, v2, c, f, pol, L)
-
         gamma_x = np.trapz(f_values, x_values.reshape(1, 100, 1), axis=1)
         gamma = np.trapz(gamma_x, y_values.reshape(1, 1, 100))
         real_part = np.array([mp.mpf(x.real) for row in gamma for x in row])
         imag_part = np.array([mp.mpf(x.imag) for row in gamma for x in row])
-        # Converti gli array di mpf in array di float
         real_part = np.array(real_part, dtype=np.float64)
         imag_part = np.array(imag_part, dtype=np.float64)
         return real_part + 1j*imag_part
@@ -91,8 +86,8 @@ class AngularResponse:
         shift_angle: shift angle between detectors (None or float)
         '''
 
-        ec1, u1, v1, l1, which_det1 = det.detector(det1, shift_angle)
-        ec2, u2, v2, l2, which_det2 = det.detector(det2, shift_angle)
+        ec1, u1, v1, l1, _ = det.detector(det1, shift_angle)
+        ec2, u2, v2, l2, _ = det.detector(det2, shift_angle)
         return AngularResponse.R_ell_func(l, ec1, u1, v1, ec2, u2, v2, c, f, pol, l1)
 
 
@@ -111,8 +106,8 @@ class AngularResponse:
 
         mp.dps = 100
 
-        c1, u1, v1, L, name = det.detector('LISA 1', shift_angle=None)
-        c2, u2, v2, L, name = det.detector('LISA 2', shift_angle=None)
+        c1, u1, v1, L, _ = det.detector('LISA 1', shift_angle=None)
+        c2, u2, v2, L, _ = det.detector('LISA 2', shift_angle=None)
 
         if l % 2 == 0:
 
@@ -190,12 +185,11 @@ class AngularResponse:
                 return 2/5*R_AT_ell(l, c1, u1, v1, c2, u2, v2, c, f, pol, L)
 
 
-# Bartolo et al. 2022 eq.4.43
+# Bartolo et al. 2022 eq.4.42 - 4.43
 
 class Sensitivity_ell:
+
     def Omega_ell(det1, det2, Rl, f):
-        # fix Rl
-        # fix in general
 
         '''
         det1, det2: detectors (string)
@@ -209,10 +203,11 @@ class Sensitivity_ell:
         Pni = np.interp(f, fi, PnI)
         Pnj = np.interp(f, fj, PnJ)
 
-        h = 0.7
         Nl = 4 * np.pi**2 * np.sqrt(4*np.pi) / (3* (H0/h)**2) * f**3 * np.sqrt(Pni * Pnj) 
 
         return np.abs(Nl/Rl/np.sqrt(4* np.pi)*h**2)
+    
+
 
     def Omega_ell_LISA(f, l, pol):
 
@@ -227,10 +222,15 @@ class Sensitivity_ell:
             Rl_AA = AngularResponse.R_ell_AET(l, 'AA', pol, f)
             Rl_TT =  AngularResponse.R_ell_AET(l, 'TT', pol, f)
 
-            Nl_AA = Nl_EE = Sensitivity_ell.Omega_ell('LISA 1', 'LISA 1', Rl_AA, f)
-            Nl_TT = Sensitivity_ell.Omega_ell('LISA 1', 'LISA 1', Rl_TT, f)
+            psd_A = LISA_noise_AET(f, 'A')
+            psd_E = LISA_noise_AET(f, 'E')
+            psd_T = LISA_noise_AET(f, 'T')
 
-            return np.sqrt(1 / ( 1/Nl_AA**2 + 1/Nl_EE**2 + 1/Nl_TT**2 ))
+            Nl_AA = 4 * np.pi**2 * np.sqrt(4*np.pi) / (3* (H0/h)**2) * f**3 * np.sqrt(psd_A * psd_A)/Rl_AA
+            Nl_EE = 4 * np.pi**2 * np.sqrt(4*np.pi) / (3* (H0/h)**2) * f**3 * np.sqrt(psd_E * psd_E)/Rl_AA
+            Nl_TT = 4 * np.pi**2 * np.sqrt(4*np.pi) / (3* (H0/h)**2) * f**3 * np.sqrt(psd_T * psd_T)/Rl_TT
+
+            return np.sqrt(1 / ( 1/(Nl_AA*h**2)**2 + 1/(Nl_EE*h**2)**2  + 1/(Nl_TT*h**2)**2)) 
         
 
         elif l % 2 == 0 and l != 0:
@@ -240,22 +240,46 @@ class Sensitivity_ell:
             Rl_AE =  AngularResponse.R_ell_AET(l, 'AE', pol, f)
             Rl_AT =  AngularResponse.R_ell_AET(l, 'AT', pol, f)
 
-            Nl_AA = Nl_EE = Sensitivity_ell.Omega_ell('LISA 1', 'LISA 1', Rl_AA, f)
-            Nl_AT = Nl_ET = Sensitivity_ell.Omega_ell('LISA 1', 'LISA 1', Rl_AT, f)
-            Nl_AE = Sensitivity_ell.Omega_ell('LISA 1', 'LISA 1', Rl_AE, f)
-            Nl_TT = Sensitivity_ell.Omega_ell('LISA 1', 'LISA 1', Rl_TT, f)
+            psd_A = LISA_noise_AET(f, 'A')
+            psd_E = LISA_noise_AET(f, 'E')
+            psd_T = LISA_noise_AET(f, 'T')
 
-            return np.sqrt(1 / ( 1/Nl_AA**2 + 1/Nl_EE**2 + 1/Nl_TT**2 + 1/Nl_AE**2 + 1/Nl_AT**2 + 1/Nl_ET**2))
-        
+            
+            Nl_AA = 4 * np.pi**2 * np.sqrt(4*np.pi) / (3* (H0/h)**2) * f**3 * np.sqrt(psd_A * psd_A)/Rl_AA
+            Nl_EE = 4 * np.pi**2 * np.sqrt(4*np.pi) / (3* (H0/h)**2) * f**3 * np.sqrt(psd_E * psd_E)/Rl_AA
+            Nl_TT = 4 * np.pi**2 * np.sqrt(4*np.pi) / (3* (H0/h)**2) * f**3 * np.sqrt(psd_T * psd_T)/Rl_TT
+            Nl_AE = 4 * np.pi**2 * np.sqrt(4*np.pi) / (3* (H0/h)**2) * f**3 * np.sqrt(psd_A * psd_E)/Rl_AE
+            Nl_AT = Nl_ET = 4 * np.pi**2 * np.sqrt(4*np.pi) / (3* (H0/h)**2) * f**3 * np.sqrt(psd_A * psd_T)/Rl_AT
+
+            return np.sqrt(1 / ( 1/(Nl_AA*h**2)**2 + 1/(Nl_EE*h**2)*2 + 1/(Nl_TT*h**2)**2 + 1/(Nl_AE*h**2)**2 + 1/(Nl_AT*h**2)**2 + 1/(Nl_ET*h**2)**2))
+
+        elif l==1:
+
+            Rl_AT =   AngularResponse.R_ell_AET(l, 'AT', pol, f)
+
+            psd_A = LISA_noise_AET(f, 'A')
+            psd_E = LISA_noise_AET(f, 'E')
+            psd_T = LISA_noise_AET(f, 'T')
+            
+            Nl_AT = Nl_ET = 4 * np.pi**2 * np.sqrt(4*np.pi) / (3* (H0/h)**2) * f**3 * np.sqrt(psd_A * psd_T)/Rl_AT
+
+            return np.sqrt(1 / ( 1/(Nl_AT*h**2)**2 + 1/(Nl_ET*h**2)**2))
+
+
         else:
             
             Rl_AE =   AngularResponse.R_ell_AET(l, 'AE', pol, f)
             Rl_AT =   AngularResponse.R_ell_AET(l, 'AT', pol, f)
-            
-            Nl_AE = Sensitivity_ell.Omega_ell('LISA 1', 'LISA 1', Rl_AE, f)
-            Nl_AT = Nl_ET = Sensitivity_ell.Omega_ell('LISA 1', 'LISA 1', Rl_AT, f)
 
-            return np.sqrt(1 / ( 1/Nl_AE**2 + 1/Nl_AT**2 + 1/Nl_ET**2))
+            psd_A = LISA_noise_AET(f, 'A')
+            psd_E = LISA_noise_AET(f, 'E')
+            psd_T = LISA_noise_AET(f, 'T')
+            
+            Nl_AE = 4 * np.pi**2 * np.sqrt(4*np.pi) / (3* (H0/h)**2) * f**3 * np.sqrt(psd_A * psd_E)/Rl_AE
+            Nl_AT = Nl_ET = 4 * np.pi**2 * np.sqrt(4*np.pi) / (3* (H0/h)**2) * f**3 * np.sqrt(psd_A * psd_T)/Rl_AT
+
+            return np.sqrt(1 / ( 1/(Nl_AE*h**2)**2 + 1/(Nl_AT*h**2)**2 + 1/(Nl_ET*h**2)**2))
+
 
 
 

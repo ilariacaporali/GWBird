@@ -4,13 +4,12 @@ from multiprocessing import Pool
 from nest import overlap as overlap
 from nest import detectors   
 from nest import nell
-from astropy.cosmology import Planck18
+from nest.detectors import LISA_noise_AET
+from nest.overlap import Response
 import matplotlib.cm as cm
 from scipy.integrate import simps
+from nest.utils import c, H0, h
 
-cosmo = Planck18
-H0 =  cosmo.H0.to('1/s').value
-h = 0.7
 
 
 def S_eff(f, fref, snr, Tobs, orf, Ni, Nj):
@@ -96,19 +95,26 @@ def PLS(det1, det2, f, fref, pol, snr, Tobs, beta_min, beta_max, shift_angle):
         pls[i] = np.max(Omega[:,i])
     return pls
 
-def PLS_l(det1, det2, l, f, fref, pol, snr, Tobs, beta_min, beta_max, shift_angle):
+def PLS_LISA(f, fref, pol, snr, Tobs, beta_min, beta_max, shift_angle):
 
-    fi, PnI = detectors.detector_Pn(det1)
-    fj, PnJ = detectors.detector_Pn(det2)
+    psd_A = LISA_noise_AET(f, 'A')
+    psd_E = LISA_noise_AET(f, 'E')
+    psd_T = LISA_noise_AET(f, 'T')
 
-    PnI = np.interp(f, fi, PnI)
-    PnJ = np.interp(f, fj, PnJ)
+    R_AA = R_EE = Response.overlap_AET('AA', f, 0, pol)
+    R_TT = Response.overlap_AET('TT', f, 0, pol)
 
-    Rl =  nell.AngularResponse.R_ell(l, det1, det2, f, pol, shift_angle)
+    _, Omega_A = all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, R_AA, psd_A, psd_A)
+    _, Omega_E = all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, R_EE, psd_E, psd_E)
+    _, Omega_T = all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, R_TT, psd_T, psd_T)
 
-    beta, Omega = all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, Rl, PnI, PnJ)
+    pls_A = np.zeros(len(f))
+    pls_E = np.zeros(len(f))
+    pls_T = np.zeros(len(f))
 
-    pls = np.zeros(len(f))
     for i in range(len(f)):
-        pls[i] = np.max(Omega[:,i])
-    return pls
+        pls_A[i] = np.max(Omega_A[:,i])
+        pls_E[i] = np.max(Omega_E[:,i])
+        pls_T[i] = np.max(Omega_T[:,i])
+
+    return 1/np.sqrt(1/ pls_A**2 + 1/ pls_E**2 + 1/ pls_T**2)
