@@ -218,41 +218,31 @@ def detector_Pn(det_name):
 
 
 def LISA_noise_AET(f, channel):
+        
         L = 2.5*1e9 #m
         c = 3*1e8 #m/s
         P = 15
         A = 3
         pm = 1e-12 #m
         fm = 1e-15 #m
-        
-        
-        def Poms(f):
-            return P*P * pm*pm * ( 1 + (2*1e-3/f)**4 )* (2*np.pi * f /c)**2
+        f_star =c/(2*np.pi*L) # Hz
 
-        def Pacc(f):
-            return A*A * fm*fm * ( 1 + (0.4*1e-3/f)**2 ) * (1 + (f/(8*1e-3))**4 ) * (1/(2* np.pi*f))**4 * (2* np.pi* f /c)**2
 
-        def N_AA(f):
-            arg = 2*np.pi*f*L/c
-            return 8* np.sin(arg)**2 * (4* (1+ np.cos(arg) + np.cos(arg**2))*Pacc(f) + (2+ np.cos(arg))*Poms(f) )
-        
-        def N_TT(f):
-            arg = 2*np.pi*f*L/c
-            return 16* np.sin(arg)**2 * (2*(1- np.cos(arg))**2 * Pacc(f) + (1-np.cos(arg))* Poms(f) )
-        
-        def R_AA(f):
-            arg = 2*np.pi*f*L/c
-            return 16* np.sin(arg)**2 * arg**2 * (9/20 /(1 + 0.7*arg**2))
-        
-        def R_TT(f):
-            arg = 2*np.pi*f*L/c
-            return 16* np.sin(arg)**2 * arg**2 * (9* arg**6/20 /(1.8e3  + 0.7*arg**8))
-        
-        if channel == 'A' or channel== 'E':
-            return N_AA(f)/R_AA(f)
-        elif channel == 'T':
-            return N_TT(f)/R_TT(f)
-        else:
-            print('Channel not found')
-            return 0
+        def NA(f):
+            N = 0.5 * (2 + cos(f/f_star)) * P**2 / L**2 * pm**2 * ( 1 + (0.002/f)**4 ) + \
+                2 * ( 1 + cos(f/f_star) + cos(f/f_star)**2 ) * A**2 / L**2 *fm**2 * (1 + (0.0004/f)**2 ) * (1 + (f/(8*1e-3))**4 ) * ((1/(2* pi*f))**4)
+            return N
     
+        def NT(f):
+            N = (1 - cos(f/f_star)) * P**2 / L**2 * pm**2 * ( 1 + (0.002/f)**4 ) + \
+                2 * ( 1 - cos(f/f_star) )**2 * A**2 / L**2 *fm**2 * (1 + (0.0004/f)**2 ) * (1 + (f/(0.008))**4 ) * ((1/(2* pi*f))**4)
+            return N
+            
+        if channel == 'A':
+            return NA(f)
+        elif channel == 'E':
+            return NA(f)
+        elif channel == 'T':
+            return NT(f)
+        else:
+            raise ValueError('Unknown channel')

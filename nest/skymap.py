@@ -2,7 +2,7 @@ import numpy as np
 from numpy import pi, cos, sin, sqrt
 import matplotlib.pyplot as plt
 from nest import detectors as det
-from nest import overlap as overlap 
+
 from nest.utils import c
 
 import matplotlib.pyplot as plt
