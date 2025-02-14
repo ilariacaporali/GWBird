@@ -1,12 +1,12 @@
 import numpy as np
-from numpy import pi, sin, cos
+from numpy import pi, sin, cos, sqrt
 from scipy.spatial.transform import Rotation as R
 from gwbird.utils import REarth
 
+
 #***************************************************************************************************************
 
-import numpy as np
-from math import pi, sqrt
+
 
 class Rotations:
 
@@ -145,7 +145,7 @@ class Observatories:
 
 #***************************************************************************************************************
 
-def detector(det_name: str, shift_angle=None):
+def detector(det_name: str, shift_angle=None, c=None, xA=None, xB=None, l=None, name=None):
     """
     Method to return the coordinates of the observatories
     """
@@ -168,6 +168,10 @@ def detector(det_name: str, shift_angle=None):
     
     if det_name in detectors:
         return detectors[det_name]()
+    
+    elif isinstance(c, np.ndarray) and isinstance(xA, np.ndarray) and isinstance(xB, np.ndarray) and isinstance(l, (int, float)) and isinstance(name, str):
+        return c, xA, xB, l, name
+
     else:
         print(f"Detector '{det_name}' not found")
         

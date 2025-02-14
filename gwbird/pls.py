@@ -6,7 +6,7 @@ from gwbird.overlap import Response
 from gwbird.utils import c, H0, h
 
 
-def PLS(det1, det2, f, fref, pol, snr, Tobs, beta_min, beta_max, shift_angle):
+def PLS(det1, det2, f, fref, pol, snr, Tobs, beta_min, beta_max, psi, shift_angle, fI=None, PnI=None, fJ=None, PnJ=None):
 
     '''
     det1, det2: detectors (string)
@@ -17,33 +17,27 @@ def PLS(det1, det2, f, fref, pol, snr, Tobs, beta_min, beta_max, shift_angle):
     Tobs: observation time (float) - in YEARS
     beta_min, beta_max: range of beta values (float)
     shift_angle: shift angle (None or float)
+    fI, PnI, fJ, PnJ: frequency and noise power spectral density arrays
 
     return: PLS array
     '''
 
-
     def S_eff(orf, Ni, Nj):
-
         '''
         Effective noise power spectral density
         '''
-
         return np.sqrt(Ni*Nj)/np.abs(orf)
 
     def Omega_eff(f, orf, Ni, Nj):
-        
         '''
         Effective energy density
         '''
-
         return 10 * np.pi**2 /(3* (H0**2)/(h**2))* f**3 * S_eff(orf, Ni, Nj)
         
     def Omega_beta(f, fref, snr, Tobs, beta, orf, Ni, Nj):
-
         '''
         Energy density for a given beta
         '''
-
         Tobs = Tobs * 365 * 24 * 3600
         Omega_eff_num = Omega_eff(f, orf, Ni, Nj)
         integrand = (((f/fref)**(beta)) / (Omega_eff_num))**2
@@ -51,32 +45,31 @@ def PLS(det1, det2, f, fref, pol, snr, Tobs, beta_min, beta_max, shift_angle):
         return  snr /np.sqrt(2*Tobs)/np.sqrt(integral)
 
     def Omega_GW(f, fref, snr, Tobs, beta, orf, Ni, Nj):
-
         '''
         Power spectral density of the GW signal
         '''
-
         return Omega_beta(f, fref, snr, Tobs, beta, orf, Ni, Nj) * ((f/fref)**(beta))
 
     def all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, orf, Ni, Nj):
-
         '''
         Power spectral density of the GW signal for a range of beta values
         '''
-
         beta = np.linspace(beta_min, beta_max, 1000)
         Omega = []
         for i in range(len(beta)):
             Omega.append(Omega_GW(f, fref, snr, Tobs, beta[i], orf, Ni, Nj))     
         return beta, np.array(Omega)
 
-    fi, PnI = detectors.detector_Pn(det1)
-    fj, PnJ = detectors.detector_Pn(det2)
+    if fI is None and PnI is None:
+        fI, PnI = detectors.detector_Pn(det1)
+    
+    if fJ is None and PnJ is None:
+        fJ, PnJ = detectors.detector_Pn(det2)
 
-    PnI = np.interp(f, fi, PnI)
-    PnJ = np.interp(f, fj, PnJ)
+    PnI = np.interp(f, fI, PnI)
+    PnJ = np.interp(f, fJ, PnJ)
 
-    orfIJ = overlap.Response.overlap(det1, det2, f, 0 , pol, shift_angle )
+    orfIJ = overlap.Response.overlap(det1, det2, f, psi, pol, shift_angle)
 
     beta, Omega = all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, orfIJ, PnI, PnJ)
 
@@ -86,7 +79,7 @@ def PLS(det1, det2, f, fref, pol, snr, Tobs, beta_min, beta_max, shift_angle):
     return pls
 
 
-def PLS_2pol(det1, det2, det3, f, fref, pol, snr, Tobs, beta_min, beta_max, shift_angle):
+def PLS_2pol(det1, det2, det3, f, fref, pol, snr, Tobs, beta_min, beta_max, psi, shift_angle, fI=None, PnI=None, fJ=None, PnJ=None, fK=None, PnK=None):
 
     '''
     det1, det2, det3: detectors (string)
@@ -101,19 +94,22 @@ def PLS_2pol(det1, det2, det3, f, fref, pol, snr, Tobs, beta_min, beta_max, shif
     return: PLS array
     '''
 
-    fi, PnI = detectors.detector_Pn(det1)
-    fj, PnJ = detectors.detector_Pn(det2)
-    fk, PnK = detectors.detector_Pn(det3)
+    if fI is None and PnI is None:
+        fI, PnI = detectors.detector_Pn(det1)
+    if fJ is None and PnJ is None:
+        fJ, PnJ = detectors.detector_Pn(det2)
+    if fK is None and PnK is None:
+        fK, PnK = detectors.detector_Pn(det3)
 
-    PnI = np.interp(f, fi, PnI)
-    PnJ = np.interp(f, fj, PnJ)
-    PnK = np.interp(f, fk, PnK)
+    PnI = np.interp(f, fI, PnI)
+    PnJ = np.interp(f, fJ, PnJ)
+    PnK = np.interp(f, fK, PnK)
 
 
-    orf_12_t = overlap.Response.overlap(det1, det2, f, 0 , 't', shift_angle )
-    orf_13_x = overlap.Response.overlap(det1, det3, f, 0 , pol, shift_angle )
-    orf_13_t = overlap.Response.overlap(det1, det3, f, 0 , 't', shift_angle )
-    orf_12_x = overlap.Response.overlap(det1, det2, f, 0 , pol, shift_angle )
+    orf_12_t = overlap.Response.overlap(det1, det2, f, psi , 't', shift_angle )
+    orf_13_x = overlap.Response.overlap(det1, det3, f, psi , pol, shift_angle )
+    orf_13_t = overlap.Response.overlap(det1, det3, f, psi , 't', shift_angle )
+    orf_12_x = overlap.Response.overlap(det1, det2, f, psi , pol, shift_angle )
 
     orfIJK = orf_12_t * orf_13_x - orf_13_t * orf_12_x
 
@@ -149,7 +145,7 @@ def PLS_2pol(det1, det2, det3, f, fref, pol, snr, Tobs, beta_min, beta_max, shif
     return pls
 
 
-def PLS_3pol(det1, det2, det3, f, fref, pol, snr, Tobs, beta_min, beta_max, shift_angle):
+def PLS_3pol(det1, det2, det3, f, fref, pol, snr, Tobs, beta_min, beta_max, psi, shift_angle, fI=None, PnI=None, fJ=None, PnJ=None, fK=None, PnK=None):
 
     '''
     det1, det2, det3: detectors (string)
@@ -164,26 +160,29 @@ def PLS_3pol(det1, det2, det3, f, fref, pol, snr, Tobs, beta_min, beta_max, shif
     return: PLS array
     '''
 
-    fi, PnI = detectors.detector_Pn(det1)
-    fj, PnJ = detectors.detector_Pn(det2)
-    fk, PnK = detectors.detector_Pn(det3)
+    if fI is None and PnI is None:
+        fI, PnI = detectors.detector_Pn(det1)
+    if fJ is None and PnJ is None:
+        fJ, PnJ = detectors.detector_Pn(det2)
+    if fK is None and PnK is None:
+        fK, PnK = detectors.detector_Pn(det3)
 
-    PnI = np.interp(f, fi, PnI)
-    PnJ = np.interp(f, fj, PnJ)
-    PnK = np.interp(f, fk, PnK)
+    PnI = np.interp(f, fI, PnI)
+    PnJ = np.interp(f, fJ, PnJ)
+    PnK = np.interp(f, fK, PnK)
 
 
-    orf_12_t = overlap.Response.overlap(det1, det2, f, 0 , 't', shift_angle )
-    orf_23_t = overlap.Response.overlap(det2, det3, f, 0 , 't', shift_angle )
-    orf_31_t = overlap.Response.overlap(det1, det3, f, 0 , 't', shift_angle )
+    orf_12_t = overlap.Response.overlap(det1, det2, f, psi , 't', shift_angle )
+    orf_23_t = overlap.Response.overlap(det2, det3, f, psi , 't', shift_angle )
+    orf_31_t = overlap.Response.overlap(det1, det3, f, psi , 't', shift_angle )
 
-    orf_12_v = overlap.Response.overlap(det1, det2, f, 0 , 'v', shift_angle )
-    orf_23_v = overlap.Response.overlap(det2, det3, f, 0 , 'v', shift_angle )
-    orf_31_v = overlap.Response.overlap(det1, det3, f, 0 , 'v', shift_angle )
+    orf_12_v = overlap.Response.overlap(det1, det2, f, psi , 'v', shift_angle )
+    orf_23_v = overlap.Response.overlap(det2, det3, f, psi , 'v', shift_angle )
+    orf_31_v = overlap.Response.overlap(det1, det3, f, psi , 'v', shift_angle )
 
-    orf_12_s = overlap.Response.overlap(det1, det2, f, 0 , 's', shift_angle )
-    orf_23_s = overlap.Response.overlap(det2, det3, f, 0 , 's', shift_angle )
-    orf_31_s = overlap.Response.overlap(det1, det3, f, 0 , 's', shift_angle )
+    orf_12_s = overlap.Response.overlap(det1, det2, f, psi , 's', shift_angle )
+    orf_23_s = overlap.Response.overlap(det2, det3, f, psi , 's', shift_angle )
+    orf_31_s = overlap.Response.overlap(det1, det3, f, psi , 's', shift_angle )
 
     orfIJK = orf_12_t * ( orf_23_s * orf_31_v - orf_31_s * orf_23_v) + \
                 orf_23_t * ( orf_31_s * orf_12_v - orf_12_s * orf_31_v) + \
@@ -258,7 +257,7 @@ def PLS_3pol(det1, det2, det3, f, fref, pol, snr, Tobs, beta_min, beta_max, shif
 
     
 
-def PLS_LISA(f, fref, pol, snr, Tobs, beta_min, beta_max):
+def PLS_LISA(f, fref, pol, snr, Tobs, beta_min, beta_max, psi):
 
     '''
     f: frequency array (array float)
@@ -301,8 +300,8 @@ def PLS_LISA(f, fref, pol, snr, Tobs, beta_min, beta_max):
     psd_E = LISA_noise_AET(f, 'E')
     psd_T = LISA_noise_AET(f, 'T')
 
-    R_AA = R_EE = Response.overlap_AET('AA', f, 0, pol)
-    R_TT = Response.overlap_AET('TT', f, 0, pol)
+    R_AA = R_EE = Response.overlap_AET('AA', f, psi, pol)
+    R_TT = Response.overlap_AET('TT', f, psi, pol)
 
     _, Omega_A = all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, R_AA, psd_A, psd_A)
     _, Omega_E = all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, R_EE, psd_E, psd_E)

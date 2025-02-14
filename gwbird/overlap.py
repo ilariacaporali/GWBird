@@ -72,8 +72,15 @@ class Response:
         return: overlap reduction function
         '''
     
-        c1, xA1, xB1, l1, _ = det.detector(det1, shift_angle)
-        c2, xA2, xB2, l2, _ = det.detector(det2, shift_angle)
+        if isinstance(det1, str):
+            c1, xA1, xB1, l1, _ = det.detector(det1, shift_angle)
+        else:
+            c1, xA1, xB1, l1, _ = det1  # Se è già una lista con i parametri, li assegni direttamente
+
+        if isinstance(det2, str):
+            c2, xA2, xB2, l2, _ = det.detector(det2, shift_angle)
+        else:
+            c2, xA2, xB2, l2, _ = det2
      
         result = Response.R_func(xA1, xB1, c1, l1, xA2, xB2, c2, l2, psi, f, l1, pol)
 

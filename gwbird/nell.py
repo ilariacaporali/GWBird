@@ -59,7 +59,7 @@ class AngularResponse:
         return real_part + 1j*imag_part
 
 
-    def R_ell_func(l, c1, u1, v1, c2, u2, v2, c, f, pol, L):
+    def R_ell_func(l, c1, u1, v1, c2, u2, v2, c, f, pol, L, psi):
         
         '''
         l dependent anisotropic response function
@@ -67,13 +67,12 @@ class AngularResponse:
 
         m_values = np.arange(-l, l+1)
         total = 0
-        psi = 0 
         for m in m_values:
             total += np.abs(AngularResponse.Rellm(l, m, u1, v1, c1, u2, v2, c2, psi, f, pol, L))**2
         return np.sqrt(total)
 
 
-    def R_ell(l, det1, det2, f, pol, shift_angle=False):
+    def R_ell(l, det1, det2, f, pol, psi, shift_angle=False):
         
         '''
         l = multipole order (int)
@@ -84,17 +83,24 @@ class AngularResponse:
         shift_angle: shift angle between detectors (None or float)
         '''
 
-        ec1, u1, v1, l1, _ = det.detector(det1, shift_angle)
-        ec2, u2, v2, l2, _ = det.detector(det2, shift_angle)
+        if isinstance(det1, str):
+            ec1, u1, v1, l1, _ = det.detector(det1, shift_angle)
+        else:
+            ec1, u1, v1, l1, _ = det1  # Se è già una lista con i parametri, li assegni direttamente
 
-        return AngularResponse.R_ell_func(l, ec1, u1, v1, ec2, u2, v2, c, f, pol, l1)
+        if isinstance(det2, str):
+            ec2, u2, v2, l2, _ = det.detector(det2, shift_angle)
+        else:
+            ec2, u2, v2, l2, _ = det2
+
+        return AngularResponse.R_ell_func(l, ec1, u1, v1, ec2, u2, v2, c, f, pol, l1, psi)
 
 
 
 
 # LISA
 
-    def R_ell_AET(l, channel, pol, f):
+    def R_ell_AET(l, channel, pol, psi, f):
 
         '''
         l = multipole order (int)
@@ -108,50 +114,46 @@ class AngularResponse:
 
         if l % 2 == 0:
 
-            def R_AA_ell(l, c1, u1, v1, c2, u2, v2, c, f, pol, L):
+            def R_AA_ell(l, c1, u1, v1, c2, u2, v2, c, f, pol, L, psi):
                 m_values = np.arange(-l, l+1)
                 total = 0
-                psi = 0 
                 for m in m_values:
                     total += np.abs((1 + np.exp(-4j*np.pi*m/3))*AngularResponse.Rellm(l, m, u1, v1, c1, u1, v1, c1, psi, f, pol, L)
                                     - 2*AngularResponse.Rellm(l, m, u1, v1, c1, u2, v2, c2, psi, f, pol, L)) **2
                 return np.sqrt(total/4)
 
-            def R_TT_ell(l, c1, u1, v1, c2, u2, v2, c, f, pol, L):
+            def R_TT_ell(l, c1, u1, v1, c2, u2, v2, c, f, pol, L, psi):
                 m_values = np.arange(-l, l+1)
                 total = 0
-                psi = 0 
                 for m in m_values:
                     total += (1 + 2*cos(2*np.pi*m/3))**2 * np.abs(AngularResponse.Rellm(l, m, u1, v1, c1, u1, v1, c1, psi, f, pol, L)
                                                                 + 2*AngularResponse.Rellm(l, m, u1, v1, c1, u2, v2, c2, psi, f, pol, L) )**2
                 return np.sqrt(np.real(total)/9)
 
-            def R_AE_ell(l, c1, u1, v1, c2, u2, v2, c, f, pol, L):
+            def R_AE_ell(l, c1, u1, v1, c2, u2, v2, c, f, pol, L, psi):
                 m_values = np.arange(-l, l+1)
                 total = 0
-                psi = 0 
                 for m in m_values:
                     total += sin(np.pi*m/3)**2 * np.abs((1 + np.exp(2j*np.pi*m/3))*AngularResponse.Rellm(l, m, u1, v1, c1, u1, v1, c1, psi, f, pol, L)
                                     - 2*AngularResponse.Rellm(l, m, u1, v1, c1, u2, v2, c2, psi, f, pol, L)) **2
                 return np.sqrt(total/3)
 
-            def R_AT_ell(l, c1, u1, v1, c2, u2, v2, c, f, pol, L):
+            def R_AT_ell(l, c1, u1, v1, c2, u2, v2, c, f, pol, L, psi):
                 m_values = np.arange(-l, l+1)
                 total = 0
-                psi = 0 
                 for m in m_values:
                     total += sin(np.pi*m/3)**2 * np.abs((1 + np.exp(2j*np.pi*m/3))*AngularResponse.Rellm(l, m, u1, v1, c1, u1, v1, c1, psi, f, pol, L)
                                     + AngularResponse.Rellm(l, m, u1, v1, c1, u2, v2, c2, psi, f, pol, L)) **2
                 return np.sqrt(2*total/3)
             
             if channel == 'AA' or channel=='EE':
-                return 2/5*R_AA_ell(l, c1, u1, v1, c2, u2, v2, c, f, pol, L)
+                return 2/5*R_AA_ell(l, c1, u1, v1, c2, u2, v2, c, f, pol, L, psi)
             elif channel == 'TT':
-                return 2/5*R_TT_ell(l, c1, u1, v1, c2, u2, v2, c, f, pol, L)
+                return 2/5*R_TT_ell(l, c1, u1, v1, c2, u2, v2, c, f, pol, L, psi)
             elif channel == 'AE':
-                return 2/5*R_AE_ell(l, c1, u1, v1, c2, u2, v2, c, f, pol, L)
+                return 2/5*R_AE_ell(l, c1, u1, v1, c2, u2, v2, c, f, pol, L, psi)
             elif channel == 'AT' or channel == 'ET':
-                return 2/5*R_AT_ell(l, c1, u1, v1, c2, u2, v2, c, f, pol, L)
+                return 2/5*R_AT_ell(l, c1, u1, v1, c2, u2, v2, c, f, pol, L, psi)
             else:
                 raise ValueError('Unknown channel')
             
@@ -160,18 +162,16 @@ class AngularResponse:
             def R_AA_ell(f):
                 return np.zeros(len(f))
             
-            def R_AE_ell(l, c1, u1, v1, c2, u2, v2, c, f, pol, L):
+            def R_AE_ell(l, c1, u1, v1, c2, u2, v2, c, f, pol, L, psi):
                 m_values = np.arange(-l, l+1)
                 total = 0
-                psi = 0 
                 for m in m_values:
                     total += (1 + 2*cos(2*np.pi*m/3))**2 * (np.abs(AngularResponse.Rellm(l, m, u1, v1, c1, u2, v2, c2, psi, f, pol, L) ))**2
                 return np.sqrt(total/3) 
             
-            def R_AT_ell(l, c1, u1, v1, c2, u2, v2, c, f, pol, L):
+            def R_AT_ell(l, c1, u1, v1, c2, u2, v2, c, f, pol, L, psi):
                 m_values = np.arange(-l, l+1)
-                total = 0
-                psi = 0 
+                total = 0 
                 for m in m_values:
                     total += sin(np.pi*m/3)**2 * (np.abs(AngularResponse.Rellm(l, m, u1, v1, c1, u2, v2, c2, psi, f, pol, L) ))**2
                 return np.sqrt(2*total)
@@ -179,9 +179,9 @@ class AngularResponse:
             if channel == 'AA' or channel == 'EE' or channel == 'TT':
                 return 2/5*R_AA_ell(f)
             elif channel == 'AE':
-                return 2/5*R_AE_ell(l, c1, u1, v1, c2, u2, v2, c, f, pol, L)
+                return 2/5*R_AE_ell(l, c1, u1, v1, c2, u2, v2, c, f, pol, L, psi)
             elif channel == 'AT' or channel=='ET':
-                return 2/5*R_AT_ell(l, c1, u1, v1, c2, u2, v2, c, f, pol, L)
+                return 2/5*R_AT_ell(l, c1, u1, v1, c2, u2, v2, c, f, pol, L, psi)
             else:
                 raise ValueError('Unknown channel')
 
@@ -192,27 +192,30 @@ class Sensitivity_ell:
 
     # Bartolo et al. 2022 eq.4.42 - 4.43
 
-    def Omega_ell(det1, det2, Rl, f):
-
+    def Omega_ell(det1, det2, Rl, f, fI=None, PnI=None, fJ=None, PnJ=None):
         '''
         det1, det2: detectors (string)
         Rl: anisotropic response function (array float)
         f: frequency array (array float)
+        fI, PnI, fJ, PnJ: frequency and noise power spectral density arrays
         '''
-
-        fi, PnI = det.detector_Pn(det1)
-        fj, PnJ = det.detector_Pn(det2)
-
-        Pni = np.interp(f, fi, PnI)
-        Pnj = np.interp(f, fj, PnJ)
-
-        Nl = 10 * pi**2 * np.sqrt(4*np.pi) / (3* (H0/h)**2) * f**3 * np.sqrt(Pni * Pnj) / Rl
-
+        
+        if isinstance(det1, list) and isinstance(det2, list):
+            Pni = np.interp(f, fI, PnI)
+            Pnj = np.interp(f, fJ, PnJ)
+        else:
+            fi, PnI = det.detector_Pn(det1)
+            fj, PnJ = det.detector_Pn(det2)
+            Pni = np.interp(f, fi, PnI)
+            Pnj = np.interp(f, fj, PnJ)
+        
+        Nl = 10 * np.pi**2 * np.sqrt(4*np.pi) / (3* (H0/h)**2) * f**3 * np.sqrt(Pni * Pnj) / Rl
+        
         return Nl
     
 
 
-    def Omega_ell_LISA(f, l, pol):
+    def Omega_ell_LISA(f, l, pol, psi):
 
         '''
         f: frequency array (array float)
@@ -222,9 +225,9 @@ class Sensitivity_ell:
 
         if l == 0:
 
-            Rl_AA = AngularResponse.R_ell_AET(l, 'AA', pol, f)
+            Rl_AA = AngularResponse.R_ell_AET(l, 'AA', pol, psi, f)
             Rl_EE = Rl_AA
-            Rl_TT =  AngularResponse.R_ell_AET(l, 'TT', pol, f)
+            Rl_TT =  AngularResponse.R_ell_AET(l, 'TT', pol, psi, f)
 
             psd_A = det.LISA_noise_AET(f, 'A')
             psd_E = det.LISA_noise_AET(f, 'E')
@@ -241,11 +244,11 @@ class Sensitivity_ell:
         
         elif l % 2 == 0 and l != 0:
 
-            Rl_AA = AngularResponse.R_ell_AET(l, 'AA', pol, f) 
+            Rl_AA = AngularResponse.R_ell_AET(l, 'AA', pol, psi, f) 
             Rl_EE = Rl_AA
-            Rl_TT =  AngularResponse.R_ell_AET(l, 'TT', pol, f) 
-            Rl_AE =  AngularResponse.R_ell_AET(l, 'AE', pol, f) 
-            Rl_AT =  AngularResponse.R_ell_AET(l, 'AT', pol, f) 
+            Rl_TT =  AngularResponse.R_ell_AET(l, 'TT', pol, psi, f) 
+            Rl_AE =  AngularResponse.R_ell_AET(l, 'AE', pol, psi, f) 
+            Rl_AT =  AngularResponse.R_ell_AET(l, 'AT', pol, psi, f) 
             Rl_ET = Rl_AT
 
             psd_A = det.LISA_noise_AET(f, 'A')
@@ -268,8 +271,8 @@ class Sensitivity_ell:
         else:
             
             print('starting l odd')
-            Rl_AE =  AngularResponse.R_ell_AET(l, 'AE', pol, f) 
-            Rl_AT =  AngularResponse.R_ell_AET(l, 'AT', pol, f) 
+            Rl_AE =  AngularResponse.R_ell_AET(l, 'AE', pol, psi, f) 
+            Rl_AT =  AngularResponse.R_ell_AET(l, 'AT', pol, psi, f) 
             Rl_ET =  Rl_AT
 
             psd_A = det.LISA_noise_AET(f, 'A')
@@ -286,9 +289,9 @@ class Sensitivity_ell:
         
 
 
-    def PLS_l(det1, det2, Rl, f, fref, snr, Tobs, beta_min, beta_max, Cl, pol, shift_angle):
+    def PLS_l(det1, det2, Rl, f, fref, snr, Tobs, beta_min, beta_max, Cl, fI=None, PnI=None, fJ=None, PnJ=None):
 
-        Omega_eff_l = Sensitivity_ell.Omega_ell(det1, det2, Rl, f)/np.sqrt(4*np.pi)
+        Omega_eff_l = Sensitivity_ell.Omega_ell(det1, det2, Rl, f, fI, PnI, fJ, PnJ)/np.sqrt(4*np.pi)
 
         def Omega_beta(f, fref, snr, Tobs, beta, Omega_eff_l):
             Tobs = Tobs * 365 * 24 * 3600
@@ -318,7 +321,7 @@ class Sensitivity_ell:
 
 
 
-    def PLS_l_LISA(f, l, pol, fref, snr, Tobs, beta_min, beta_max, Cl):
+    def PLS_l_LISA(f, l, pol, fref, snr, Tobs, beta_min, beta_max, Cl, psi):
 
         '''
         f: frequency array (array float)
@@ -328,9 +331,9 @@ class Sensitivity_ell:
 
         if l == 0:
 
-            Rl_AA = AngularResponse.R_ell_AET(l, 'AA', pol, f)
+            Rl_AA = AngularResponse.R_ell_AET(l, 'AA', pol, psi, f)
             Rl_EE = Rl_AA
-            Rl_TT =  AngularResponse.R_ell_AET(l, 'TT', pol, f)
+            Rl_TT =  AngularResponse.R_ell_AET(l, 'TT', pol, psi, f)
 
             psd_A = det.LISA_noise_AET(f, 'A')
             psd_E = det.LISA_noise_AET(f, 'E')
@@ -371,11 +374,11 @@ class Sensitivity_ell:
 
         elif l % 2 == 0 and l != 0:
 
-            Rl_AA = AngularResponse.R_ell_AET(l, 'AA', pol, f)
+            Rl_AA = AngularResponse.R_ell_AET(l, 'AA', pol, psi, f)
             Rl_EE = Rl_AA
-            Rl_TT =  AngularResponse.R_ell_AET(l, 'TT', pol, f)
-            Rl_AE =  AngularResponse.R_ell_AET(l, 'AE', pol, f)
-            Rl_AT =  AngularResponse.R_ell_AET(l, 'AT', pol, f)
+            Rl_TT =  AngularResponse.R_ell_AET(l, 'TT', pol, psi, f)
+            Rl_AE =  AngularResponse.R_ell_AET(l, 'AE', pol, psi, f)
+            Rl_AT =  AngularResponse.R_ell_AET(l, 'AT', pol, psi, f)
             Rl_ET = Rl_AT
 
             psd_A = det.LISA_noise_AET(f, 'A')
@@ -419,8 +422,8 @@ class Sensitivity_ell:
 
         else:
             
-            Rl_AE =  AngularResponse.R_ell_AET(l, 'AE', pol, f)
-            Rl_AT =  AngularResponse.R_ell_AET(l, 'AT', pol, f)
+            Rl_AE =  AngularResponse.R_ell_AET(l, 'AE', pol, psi, f)
+            Rl_AT =  AngularResponse.R_ell_AET(l, 'AT', pol, psi, f)
             Rl_ET = Rl_AT
 
             psd_A = det.LISA_noise_AET(f, 'A')
