@@ -141,6 +141,8 @@ class Observatories:
         xA, xB, xC, lBA, lCA, lBC, l = self.LISA_arms()
         return xC * l, -lCA, lBC, l, "LISA 3"
     
+    
+    
 
 
 #***************************************************************************************************************

@@ -113,7 +113,7 @@ class Response:
         if isinstance(det1, str):
             c1, xA1, xB1, l1, _ = det.detector(det1, shift_angle)
         else:
-            c1, xA1, xB1, l1, _ = det1  # Se è già una lista con i parametri, li assegni direttamente
+            c1, xA1, xB1, l1, _ = det1  
 
         if isinstance(det2, str):
             c2, xA2, xB2, l2, _ = det.detector(det2, shift_angle)
@@ -218,7 +218,7 @@ class Response:
             return print('Select AA, EE or TT')
         
 
-    def overlap_AET_RL(channel, f, psi, pol):
+    def overlap_AET_IV(channel, f, psi, pol):
 
         '''
         
@@ -231,11 +231,8 @@ class Response:
         return: overlap reduction function in the AET configuration
         '''
 
-        c1, xA1, xB1, l1, _ = det.detector('LISA 1', shift_angle=None)
-        c2, xA2, xB2, l2, _ = det.detector('LISA 2', shift_angle=None)
-
-        auto = Response.R_func_RL(xA1, xB1, c1, l1, xA1, xB1, c1, l1, psi, f, l1, pol)
-        cross = Response.R_func_RL(xA1, xB1, c1, l1, xA2, xB2, c2, l2, psi, f, l1, pol)
+        auto = Response.overlap_IV('LISA 1', 'LISA 1', f, psi, pol, shift_angle=False)
+        cross = Response.overlap_IV('LISA 1', 'LISA 2', f, psi, pol, shift_angle=False)
 
         if channel=='AA' or channel=='EE':
             return 2/5*np.abs(auto-cross)
