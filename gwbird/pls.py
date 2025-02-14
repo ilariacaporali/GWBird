@@ -6,7 +6,7 @@ from gwbird.overlap import Response
 from gwbird.utils import c, H0, h
 
 
-def PLS(det1, det2, f, fref, pol, snr, Tobs, beta_min, beta_max, psi, shift_angle, fI=None, PnI=None, fJ=None, PnJ=None):
+def PLS(det1, det2, f, fref, pol, snr, Tobs, beta_min, beta_max, psi, shift_angle=False, fI=None, PnI=None, fJ=None, PnJ=None):
 
     '''
     det1, det2: detectors (string)

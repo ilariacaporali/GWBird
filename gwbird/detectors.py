@@ -176,6 +176,12 @@ def detector(det_name: str, shift_angle=None, c=None, xA=None, xB=None, l=None, 
         print(f"Detector '{det_name}' not found")
         
 
+def available_detectors():
+    '''
+    List of available detectors
+    '''
+    return ['LIGO H', 'LIGO L', 'Virgo', 'KAGRA', 'CE', 'ET A', 'ET B', 'ET C', 'ET L1', 'ET L2', 'LISA 1', 'LISA 2', 'LISA 3']
+    
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 

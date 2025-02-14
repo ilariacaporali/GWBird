@@ -90,6 +90,13 @@ class Response:
             return np.array(result)
         
 
+    def available_detectors():
+        '''
+        List of available detectors
+        '''
+        return ['LIGO H', 'LIGO L', 'Virgo', 'KAGRA', 'CE', 'ET A', 'ET B', 'ET C', 'ET L1', 'ET L2', 'LISA 1', 'LISA 2', 'LISA 3']
+        
+
         
     def overlap_AET(channel, f, psi, pol):
         
