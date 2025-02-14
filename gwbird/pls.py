@@ -69,7 +69,10 @@ def PLS(det1, det2, f, fref, pol, snr, Tobs, beta_min, beta_max, psi, shift_angl
     PnI = np.interp(f, fI, PnI)
     PnJ = np.interp(f, fJ, PnJ)
 
-    orfIJ = overlap.Response.overlap(det1, det2, f, psi, pol, shift_angle)
+    if pol =='I' or pol == 'V':
+        orfIJ = overlap.Response.overlap_IV(det1, det2, f, psi, pol, shift_angle)
+    else:
+        orfIJ = overlap.Response.overlap(det1, det2, f, psi, pol, shift_angle)
 
     beta, Omega = all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, orfIJ, PnI, PnJ)
 

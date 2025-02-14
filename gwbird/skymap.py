@@ -64,6 +64,21 @@ class PolarizationTensors:
         e_l = np.einsum('i...,k...',Omega,Omega) * sqrt(2)
 
         return e_plus, e_cross, e_x, e_y, e_b, e_l
+    
+    def e_pol_RL(theta, phi, psi):  
+
+        '''
+        Polarization modes in the general orthonormal basis (m,n, Omega)
+        '''
+
+        m, n, Omega = Basis.m_n_Omega_basis(theta, phi, psi)
+        e_plus = np.einsum('i...,k...',m,m)-np.einsum('i...,k...',n,n)
+        e_cross = np.einsum('i...,k...',m,n)+np.einsum('i...,k...',n,m)
+
+        e_R = (e_plus + 1j * e_cross) / sqrt(2)
+        e_L = (e_plus - 1j * e_cross) / sqrt(2)
+
+        return e_R, e_L
 
 class TransferFunction:
 
@@ -109,7 +124,24 @@ class AngularPatternFunction:
 
         return F_plus, F_cross, F_x, F_y, F_b, F_l 
 
+    def F_RL(theta, phi, psi, ce, e1, e2, f, L):
+         
+        '''
+        Angular pattern function: detector response to an incoming GW signal
+        '''
 
+        e_R, e_L = PolarizationTensors.e_pol_RL(theta, phi, psi)
+        omega = Basis.m_n_Omega_basis(theta, phi, psi)[2]
+        f = f.reshape(len(f), 1, 1)
+        f_star = c/2/pi
+        tr_arm1 = TransferFunction.transfer_function(L, e1, f, theta, phi, psi)
+        tr_arm2 = TransferFunction.transfer_function(L, e2, f, theta, phi, psi)
+        exp_c = np.exp(-1j*f/f_star * (np.einsum('iab,i->ab', omega, ce))) 
+        
+        F_R = 0.5 * exp_c * ( tr_arm1 * np.einsum('i,j,lmij', e1, e1, e_R) - tr_arm2 * np.einsum('i,j,lmij', e2, e2, e_R) )
+        F_L = 0.5 * exp_c * ( tr_arm1 * np.einsum('i,j,lmij', e1, e1, e_L) - tr_arm2 * np.einsum('i,j,lmij', e2, e2, e_L) )
+
+        return F_R, F_L
 
 
 
