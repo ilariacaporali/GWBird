@@ -141,6 +141,30 @@ class Observatories:
         xA, xB, xC, lBA, lCA, lBC, l = self.LISA_arms()
         return xC * l, -lCA, lBC, l, "LISA 3"
     
+
+    def Taiji_arms(self):
+        l = 3.0e9  # arm length
+        xA = np.array([0., 0., 0.])
+        xB = np.array([+1/2., np.sqrt(3)/2, 0])
+        xC = np.array([-1/2, np.sqrt(3)/2, 0])
+        lBA = xB - xA
+        lCA = xC - xA
+        lBC = xB - xC
+        return xA, xB, xC, lBA, lCA, lBC, l
+
+    def Taiji1(self):
+        xA, xB, xC, lBA, lCA, lBC, l = self.Taiji_arms()
+        return xA * l, lBA, lCA, l, "Taiji 1"
+
+    def Taiji2(self):
+        xA, xB, xC, lBA, lCA, lBC, l = self.Taiji_arms()
+        return xB * l, -lBC, -lBA, l, "Taiji 2"
+
+    def Taiji3(self):
+        xA, xB, xC, lBA, lCA, lBC, l = self.Taiji_arms()
+        return xC * l, -lCA, lBC, l, "Taiji 3"
+
+    
     
     
 
@@ -165,7 +189,7 @@ def detector(det_name: str, shift_angle=None, c=None, xA=None, xB=None, l=None, 
         "ET L2":  lambda angle=shift_angle: observatories.ET_L_netherlands(angle),
         "LISA 1": observatories.LISA1,
         "LISA 2": observatories.LISA2,
-        "LISA 3": observatories.LISA3,
+        "LISA 3": observatories.LISA3
     }
     
     if det_name in detectors:
