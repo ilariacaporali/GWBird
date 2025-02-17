@@ -75,12 +75,32 @@ class AngularResponse:
     def R_ell(l, det1, det2, f, pol, psi, shift_angle=False):
         
         '''
-        l = multipole order (int)
-        det1, det2: detectors (string)
-        f: frequency array (array float)
-        psi: polarization angle (float)
-        pol: polarization mode (string)
-        shift_angle: shift angle between detectors (None or float)
+        Parameters:
+        - ell: int positive (Multipole to consider)
+        - det1, det2: str or list of str
+            The name of the detector(s) to consider.
+            The names must be in the list of detectors available in the response module.
+            The list of available detectors can be obtained by calling the function detectors.available_detectors().
+            The names of the detectors are case sensitive.
+            If you want to provide a custom detector, you can provide the following information in a list:
+
+            H = [c, xA, xB, l, name]
+
+            - c: array_like of length 3 (Position of the detector in the Earth-centered frame in meters)
+            - xA: array_like of length 3 (Unit vector pointing towards the detector in the Earth-centered frame)
+            - xB: array_like of length 3 (Unit vector pointing towards the detector in the Earth-centered frame)
+            - l: float (Length of the arm in meters)
+            - name: str (Name of the detector)
+
+        - f: array_like (Frequency in Hz)
+        - pol: str (Polarization of the signal, 't' for tensor, 'v' for vector, 's' for scalar)
+        - psi: float (Polarization angle in radians)
+
+        Optional parameters:
+
+        - shift_angle: bool or float (Shift the angle of the response if considering ET 2L in radians)
+        
+        return: array float (angular response function)
         '''
 
         if isinstance(det1, str):
@@ -103,10 +123,17 @@ class AngularResponse:
     def R_ell_AET(l, channel, pol, psi, f):
 
         '''
-        l = multipole order (int)
-        channel: channel in the AET basis (string)
-        pol: polarization mode (string)
-        f: frequency array (array float)
+        Parameters:
+        - ell: int positive (Multipole to consider)
+        - channel: string (ell = 0 channels are 'AA', 'EE', 'TT' 
+                           ell = even channels are 'AA', 'EE', 'TT', 'AE', 'AT', 'ET' 
+                           ell = odd channels are 'AE', 'AT', 'ET') 
+        - pol: str (Polarization of the signal, 't' for tensor, 'v' for vector, 's' for scalar)
+        - psi: float (Polarization angle in radians)
+        - f: array_like (Frequency in Hz)
+
+        Return: array float (angular response function)
+
         '''
 
         c1, u1, v1, L, _ = det.detector('LISA 1', shift_angle=None)
@@ -291,6 +318,41 @@ class Sensitivity_ell:
 
     def PLS_l(det1, det2, Rl, f, fref, snr, Tobs, beta_min, beta_max, Cl, fI=None, PnI=None, fJ=None, PnJ=None):
 
+        '''
+        Parameters:
+
+        - det1, det2: str or list of str
+            The name of the detector(s) to consider.
+            The names must be in the list of detectors available in the response module.
+            The list of available detectors can be obtained by calling the function detectors.available_detectors().
+            The names of the detectors are case sensitive.
+            If you want to provide a custom detector, you can provide the following information in a list:
+
+            H = [c, xA, xB, l, name]
+
+            - c: array_like of length 3 (Position of the detector in the Earth-centered frame in meters)
+            - xA: array_like of length 3 (Unit vector pointing towards the detector in the Earth-centered frame)
+            - xB: array_like of length 3 (Unit vector pointing towards the detector in the Earth-centered frame)
+            - l: float (Length of the arm in meters)
+            - name: str (Name of the detector)
+
+        - Rl: array_like (Angular response for the multipole ell)
+        - f = array_like (Frequency in Hz)
+        - fref = float (Reference frequency in Hz)
+        - snr = float (Signal-to-noise ratio threshold)
+        - Tobs = float (Observation time in years)
+        - beta_min = float (Minimum tilt to consider)
+        - beta_max = float (Maximum tilt to consider)
+        - Cl = float (Cl for the multipole ell)
+
+        Optional parameters:
+        - fI = bool or array_like (Frequency in Hz for the detector I)
+        - PnI = bool or array_like (Power spectral density for the detector I)
+        - fJ = bool or array_like (Frequency in Hz for the detector J)
+        - PnJ = bool or array_like (Power spectral density for the detector J)
+
+        '''
+
         Omega_eff_l = Sensitivity_ell.Omega_ell(det1, det2, Rl, f, fI, PnI, fJ, PnJ)/np.sqrt(4*np.pi)
 
         def Omega_beta(f, fref, snr, Tobs, beta, Omega_eff_l):
@@ -324,11 +386,19 @@ class Sensitivity_ell:
     def PLS_l_LISA(f, l, pol, fref, snr, Tobs, beta_min, beta_max, Cl, psi):
 
         '''
-        f: frequency array (array float)
-        l: multipole order (int)
-        pol: polarization mode (string)
+        Parameters:
+        - f = array_like (Frequency in Hz)
+        - Rl: array_like (Angular response for the multipole ell)
+        - fref = float (Reference frequency in Hz)
+        - snr = float (Signal-to-noise ratio threshold)
+        - Tobs = float (Observation time in years)
+        - beta_min = float (Minimum tilt to consider)
+        - beta_max = float (Maximum tilt to consider)
+        - Cl = float (Cl for the multipole ell)
+        - psi = float (Polarization angle in radians)
+        
+        Return: array float (PLS for the multipole ell)
         '''
-
         if l == 0:
 
             Rl_AA = AngularResponse.R_ell_AET(l, 'AA', pol, psi, f)

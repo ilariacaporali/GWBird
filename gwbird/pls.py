@@ -9,15 +9,43 @@ from gwbird.utils import c, H0, h
 def PLS(det1, det2, f, fref, pol, snr, Tobs, beta_min, beta_max, psi, shift_angle=False, fI=None, PnI=None, fJ=None, PnJ=None):
 
     '''
-    det1, det2: detectors (string)
-    f: frequency array (array float)
-    fref: reference frequency (float)
-    pol: polarization mode (string)
-    snr: signal-to-noise ratio threshold (float)
-    Tobs: observation time (float) - in YEARS
-    beta_min, beta_max: range of beta values (float)
-    shift_angle: shift angle (None or float)
-    fI, PnI, fJ, PnJ: frequency and noise power spectral density arrays
+
+    Evaluate the sensitivity of a couple of detector to a GWB signal.
+
+        Parameters:
+
+        - det1, det2: str or list of str
+            The name of the detector(s) to consider.
+            The names must be in the list of detectors available in the response module.
+            The list of available detectors can be obtained by calling the function detectors.available_detectors().
+            The names of the detectors are case sensitive.
+            If you want to provide a custom detector, you can provide the following information in a list:
+
+            H = [c, xA, xB, l, name]
+
+            - c: array_like of length 3 (Position of the detector in the Earth-centered frame in meters)
+            - xA: array_like of length 3 (Unit vector pointing towards the detector in the Earth-centered frame)
+            - xB: array_like of length 3 (Unit vector pointing towards the detector in the Earth-centered frame)
+            - l: float (Length of the arm in meters)
+            - name: str (Name of the detector)
+
+        - f = array_like (Frequency in Hz)
+        - fref = float (Reference frequency in Hz)
+        - pol = str (Polarization of the signal, 't' for tensor, 'v' for vector, 's' for scalar)
+        - snr = float (Signal-to-noise ratio threshold)
+        - Tobs = float (Observation time in years)
+        - beta_min = float (Minimum tilt to consider)
+        - beta_max = float (Maximum tilt to consider)
+        - psi = float (Polarization angle in radians)
+
+
+        Optional parameters:
+        - shift_angle = bool or float (Shift the angle of the response if considering ET 2L in radians)
+        - fI = bool or array_like (Frequency in Hz for the detector I)
+        - PnI = bool or array_like (Power spectral density for the detector I)
+        - fJ = bool or array_like (Frequency in Hz for the detector J)
+        - PnJ = bool or array_like (Power spectral density for the detector J)
+
 
     return: PLS array
     '''
@@ -263,13 +291,16 @@ def PLS_3pol(det1, det2, det3, f, fref, pol, snr, Tobs, beta_min, beta_max, psi,
 def PLS_LISA(f, fref, pol, snr, Tobs, beta_min, beta_max, psi):
 
     '''
-    f: frequency array (array float)
-    fref: reference frequency (float)
-    pol: polarization mode (string)
-    snr: signal-to-noise ratio threshold (float)
-    Tobs: observation time (float) - in YEARS
-    beta_min, beta_max: range of beta values (float)
-    shift_angle: shift angle (None or float)
+   Parameters:
+
+    - f = array_like (Frequency in Hz)
+    - fref = float (Reference frequency in Hz)
+    - pol = str (Polarization of the signal, 't' for tensor, 'v' for vector, 's' for scalar)
+    - snr = float (Signal-to-noise ratio threshold)
+    - Tobs = float (Observation time in years)
+    - beta_min = float (Minimum tilt to consider)
+    - beta_max = float (Maximum tilt to consider)
+    - psi = float (Polarization angle in radians)
 
     return: PLS array - weighted for all channels
 

@@ -100,15 +100,36 @@ class Response:
 
     def overlap(det1, det2, f, psi, pol, shift_angle=False):
         
-        '''
-        det1, det2: detectors (string)
-        f: frequency array (array float)
-        psi: polarization angle (float)
-        pol: polarization mode (string)
-        shift_angle: shift angle between detectors (None or float)
+        """
+        Calculate the overlap response between two detectors.
 
-        return: overlap reduction function
-        '''
+        R = Response.overlap(det1, det2, f, psi, pol, shift_angle=False)
+
+        Parameters:
+        - det1, det2: str or list of str
+            The name of the detector(s) to consider.
+            The names must be in the list of detectors available in the response module.
+            The list of available detectors can be obtained by calling the function detectors.available_detectors().
+            The names of the detectors are case sensitive.
+            If you want to provide a custom detector, you can provide the following information in a list:
+
+            H = [c, xA, xB, l, name]
+
+            - c: array_like of length 3 (Position of the detector in the Earth-centered frame in meters)
+            - xA: array_like of length 3 (Unit vector pointing towards the detector in the Earth-centered frame)
+            - xB: array_like of length 3 (Unit vector pointing towards the detector in the Earth-centered frame)
+            - l: float (Length of the arm in meters)
+            - name: str (Name of the detector)
+
+        - f: array_like (Frequency in Hz)
+        - psi: float (Polarization angle in radians)
+        - pol: str (Polarization of the signal, 't' for tensor, 'v' for vector, 's' for scalar)
+
+        Optional parameters:
+        - shift_angle: bool or float (Shift the angle of the response if considering ET 2L in radians)
+
+        Example usage:
+        """
     
         if isinstance(det1, str):
             c1, xA1, xB1, l1, _ = det.detector(det1, shift_angle)
@@ -195,13 +216,15 @@ class Response:
     def overlap_AET(channel, f, psi, pol):
         
         '''
-        channel: AA, EE or TT (string)
-        f: frequency array (array float)
-        psi: polarization angle (float)
-        pol: polarization mode (string)
-        shift_angle: shift angle between detectors (None or float)
+        Evaluate the response function for LISA in the AET basis.
 
-        return: overlap reduction function in the AET configuration
+        Parameters:
+        - channel : string (AA, EE or TT)
+        - f: array_like (Frequency in Hz)
+        - psi: float (Polarization angle in radians)
+        - pol: str (Polarization of the signal, 't' for tensor, 'v' for vector, 's' for scalar)
+
+        return: array_like (overlap reduction function in the AET configuration)
         '''
     
         c1, xA1, xB1, l1, _ = det.detector('LISA 1', shift_angle=None)
