@@ -1,28 +1,46 @@
-# GWBird 🦜
+# GWBird 🥚
 
-GWBird is a Python package that allows to compute the response and sensitivity of a network of detectors to a stochastic gravitational wave background.
+GWBird is a Python package that allows computing the response and sensitivity of a network of detectors to a stochastic gravitational wave background.
 
+## Installation
+
+### Requirements
+
+To use GWBird, make sure you have the following Python packages installed:
+
+- `numpy`
+- `healpy`
+- `scipy`
+- `mpmath`
+- `matplotlib`
+
+### Download and Installation
+
+1. Clone or download this repository to your computer:
+
+   ```sh
+   git clone /https://github.com/ilariacaporali/GWBird
+   cd GWBird
+   ```
+
+2. Install the package in your selected environment by running:
+
+   ```sh
+   pip install -e .
+   ```
+
+3. Now you can import GWBird in your Python scripts:
+
+   ```python
+   import gwbird
+   ```
 
 ## Credits
 
-You are welcome to use this code in your research. We kindly ask you to cite the paper ... .
+If you use this code in your research, we kindly ask you to cite the paper: **[insert reference]**.
 
-## Requirements
+---
 
-You need to install
-* numpy
-* healpy
-* scipy
-* mpmath
-* matplotlib
+For more information, visit the [official documentation](#) or open an issue in the repository.
 
-## Download
 
-You can download this folder in your computer.
-Then in your selected enviorment and in the folder wher you have downloaded GWBird run
-
-```
-pip install -e.
-```
-
-Then you can import this code as gwbird.
