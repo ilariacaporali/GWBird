@@ -6,108 +6,149 @@ from gwbird.overlap import Response
 from gwbird.utils import c, H0, h
 
 
-def PLS(det1, det2, f, fref, pol, snr, Tobs, beta_min, beta_max, psi, shift_angle=False, fI=None, PnI=None, fJ=None, PnJ=None):
+def PLS(det1, det2, f, fref, pol, snr, Tobs, psi, Stokes_parameter=False, shift_angle=False, fI=None, PnI=None, fJ=None, PnJ=None):
+    '''
+    Evaluate the sensitivity of a pair of detectors or a network of detectors to a Gravitational Wave Background (GWB) signal.
 
+    Parameters:
+    - det1, det2 : str or list of str
+        The names of the detectors or the network of detectors to be considered.
+        Supported options are:
+        - Predefined detector networks such as 'ET triangular', 'LISA', or custom detectors defined as lists with specific parameters.
+        - For custom detectors, provide a list with the following elements: [c, xA, xB, l, name]
+          - c: array_like of length 3 (position of the detector in the Earth-centered frame in meters)
+          - xA: array_like of length 3 (unit vector pointing towards the detector in the Earth-centered frame)
+          - xB: array_like of length 3 (unit vector pointing towards the detector in the Earth-centered frame)
+          - l: float (length of the detector arm in meters)
+          - name: str (name of the detector)
+
+    - f : array_like
+        Frequency values (in Hz) for the Gravitational Wave signal.
+    - fref : float
+        Reference frequency (in Hz) for the signal analysis.
+    - pol : str
+        Polarization of the signal. Should be one of:
+        - 't' for tensor polarization
+        - 'v' for vector polarization
+        - 's' for scalar polarization
+    - snr : float
+        Signal-to-noise ratio (SNR) threshold for the analysis.
+    - Tobs : float
+        Total observation time in years.
+    - psi : float
+        Polarization angle of the Gravitational Wave signal (in radians).
+    - shift_angle : bool or float, optional
+        If set to `True` or a specific angle value, shifts the angle of the response (used in the case of ET 2L).
+    - fI, PnI, fJ, PnJ : optional
+        Frequency arrays and corresponding Power Spectral Densities (PSDs) for custom detectors. These are used when no predefined detector networks are chosen.
+
+    Returns:
+    - PLS : array
+        The sensitivity of the detector(s) to the GWB signal, evaluated as the Power-Law Sensitivity (PLS). This is a function of the observation time, SNR, and the detectors' noise characteristics.
+
+    Description:
+    This function calculates the sensitivity of a pair of detectors or a network of detectors to a Gravitational Wave Background (GWB) signal, based on the given parameters. It evaluates the effective noise power spectral density and energy density for the signal and computes the corresponding sensitivity. The analysis can handle both predefined detector networks (such as LISA or ET) and custom detectors with user-supplied parameters.
+
+    - For predefined detector networks (like 'ET triangular' or 'LISA'), the function calculates the sensitivity by considering the relevant response functions and the associated noise power spectral densities.
+    - For custom detectors, the function interpolates the supplied PSDs and calculates the overlap response between the detectors.
+    - The result is the sensitivity of the system to the GWB signal, given in terms of the Power-Law Sensitivity (PLS), which quantifies the detector network's ability to detect gravitational waves with the specified polarization, frequency range, and observation time.
     '''
 
-    Evaluate the sensitivity of a couple of detector to a GWB signal.
-
-        Parameters:
-
-        - det1, det2: str or list of str
-            The name of the detector(s) to consider.
-            The names must be in the list of detectors available in the response module.
-            The list of available detectors can be obtained by calling the function detectors.available_detectors().
-            The names of the detectors are case sensitive.
-            If you want to provide a custom detector, you can provide the following information in a list:
-
-            H = [c, xA, xB, l, name]
-
-            - c: array_like of length 3 (Position of the detector in the Earth-centered frame in meters)
-            - xA: array_like of length 3 (Unit vector pointing towards the detector in the Earth-centered frame)
-            - xB: array_like of length 3 (Unit vector pointing towards the detector in the Earth-centered frame)
-            - l: float (Length of the arm in meters)
-            - name: str (Name of the detector)
-
-        - f = array_like (Frequency in Hz)
-        - fref = float (Reference frequency in Hz)
-        - pol = str (Polarization of the signal, 't' for tensor, 'v' for vector, 's' for scalar)
-        - snr = float (Signal-to-noise ratio threshold)
-        - Tobs = float (Observation time in years)
-        - beta_min = float (Minimum tilt to consider)
-        - beta_max = float (Maximum tilt to consider)
-        - psi = float (Polarization angle in radians)
-
-
-        Optional parameters:
-        - shift_angle = bool or float (Shift the angle of the response if considering ET 2L in radians)
-        - fI = bool or array_like (Frequency in Hz for the detector I)
-        - PnI = bool or array_like (Power spectral density for the detector I)
-        - fJ = bool or array_like (Frequency in Hz for the detector J)
-        - PnJ = bool or array_like (Power spectral density for the detector J)
-
-
-    return: PLS array
-    '''
-
+    
     def S_eff(orf, Ni, Nj):
-        '''
-        Effective noise power spectral density
-        '''
-        return np.sqrt(Ni*Nj)/np.abs(orf)
+        '''Effective noise power spectral density'''
+        return np.sqrt(Ni * Nj) / np.abs(orf)
 
     def Omega_eff(f, orf, Ni, Nj):
-        '''
-        Effective energy density
-        '''
-        return 10 * np.pi**2 /(3* (H0**2)/(h**2))* f**3 * S_eff(orf, Ni, Nj)
-        
+        '''Effective energy density'''
+        return 10 * np.pi**2 / (3 * (H0**2) / (h**2)) * f**3 * S_eff(orf, Ni, Nj)
+
     def Omega_beta(f, fref, snr, Tobs, beta, orf, Ni, Nj):
-        '''
-        Energy density for a given beta
-        '''
+        '''Energy density for a given beta'''
         Tobs = Tobs * 365 * 24 * 3600
         Omega_eff_num = Omega_eff(f, orf, Ni, Nj)
-        integrand = (((f/fref)**(beta)) / (Omega_eff_num))**2
+        integrand = (((f / fref) ** beta) / Omega_eff_num) ** 2
         integral = np.trapz(integrand, f)
-        return  snr /np.sqrt(2*Tobs)/np.sqrt(integral)
+        return snr / np.sqrt(2 * Tobs) / np.sqrt(integral)
 
     def Omega_GW(f, fref, snr, Tobs, beta, orf, Ni, Nj):
-        '''
-        Power spectral density of the GW signal
-        '''
-        return Omega_beta(f, fref, snr, Tobs, beta, orf, Ni, Nj) * ((f/fref)**(beta))
+        '''Power spectral density of the GW signal'''
+        return Omega_beta(f, fref, snr, Tobs, beta, orf, Ni, Nj) * ((f / fref) ** beta)
 
-    def all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, orf, Ni, Nj):
-        '''
-        Power spectral density of the GW signal for a range of beta values
-        '''
-        beta = np.linspace(beta_min, beta_max, 1000)
-        Omega = []
-        for i in range(len(beta)):
-            Omega.append(Omega_GW(f, fref, snr, Tobs, beta[i], orf, Ni, Nj))     
-        return beta, np.array(Omega)
-
-    if fI is None and PnI is None:
-        fI, PnI = detectors.detector_Pn(det1)
+    def all_Omega_GW(f, fref, snr, Tobs, orf, Ni, Nj):
+        '''Power spectral density of the GW signal for beta values from beta_min to beta_max'''
+        beta = np.linspace(-40, 40, 1000)
+        Omega = np.array([Omega_GW(f, fref, snr, Tobs, b, orf, Ni, Nj) for b in beta])
+        return beta, Omega
     
-    if fJ is None and PnJ is None:
-        fJ, PnJ = detectors.detector_Pn(det2)
+    # Check if det1 and det2 are predefined network names ('ET triangular' or 'LISA')
+    if det1 == 'ET triangular' and det2 == 'Network':
+        if fI is None and PnI is None:
+            fI, PnI = detectors.detector_Pn('ET X')
+        
+        if fJ is None and PnJ is None:
+            fJ, PnJ = detectors.detector_Pn('ET X')
 
-    PnI = np.interp(f, fI, PnI)
-    PnJ = np.interp(f, fJ, PnJ)
+        psd_A = psd_E = psd_T = np.interp(f, fI, PnI)
 
-    if pol =='I' or pol == 'V':
-        orfIJ = overlap.Response.overlap_IV(det1, det2, f, psi, pol, shift_angle)
+        R_AA = Response.overlap('ET A', 'ET A', f, psi, pol)
+        R_EE = Response.overlap('ET E', 'ET E', f, psi, pol)
+        R_TT = Response.overlap('ET T', 'ET T', f, psi, pol)
+
+        _, Omega_A = all_Omega_GW(f, fref, snr, Tobs, R_AA, psd_A, psd_A)
+        _, Omega_E = all_Omega_GW(f, fref, snr, Tobs, R_EE, psd_E, psd_E)
+        _, Omega_T = all_Omega_GW(f, fref, snr, Tobs, R_TT, psd_T, psd_T)
+
+        pls_A = np.max(Omega_A, axis=0)
+        pls_E = np.max(Omega_E, axis=0)
+        pls_T = np.max(Omega_T, axis=0)
+
+        pls = np.array([pls_A, pls_E, pls_T])
+
+        return np.sum(1 / pls**2, axis=0)**(-0.5)
+
+    elif det1 == 'LISA' and det2 == 'Network':
+        psd_A = LISA_noise_AET(f, 'A')
+        psd_E = LISA_noise_AET(f, 'E')
+        psd_T = LISA_noise_AET(f, 'T')
+
+        R_AA = Response.overlap('LISA A', 'LISA A', f, psi, pol)
+        R_EE = Response.overlap('LISA E', 'LISA E', f, psi, pol)
+        R_TT = Response.overlap('LISA T', 'LISA T', f, psi, pol)
+
+        _, Omega_A = all_Omega_GW(f, fref, snr, Tobs, R_AA, psd_A, psd_A)
+        _, Omega_E = all_Omega_GW(f, fref, snr, Tobs, R_EE, psd_E, psd_E)
+        _, Omega_T = all_Omega_GW(f, fref, snr, Tobs, R_TT, psd_T, psd_T)
+
+        pls_A = np.max(Omega_A, axis=0)
+        pls_E = np.max(Omega_E, axis=0)
+        pls_T = np.max(Omega_T, axis=0)
+
+        pls = np.array([pls_A, pls_E, pls_T])
+
+        return np.sum(1 / pls**2, axis=0)**(-0.5)
+
+    elif isinstance(det1, str or list) and isinstance(det2, str or list):
+        # Handle the case of custom detectors
+        if fI is None and PnI is None:
+            fI, PnI = detectors.detector_Pn(det1)
+        
+        if fJ is None and PnJ is None:
+            fJ, PnJ = detectors.detector_Pn(det2)
+
+        PnI = np.interp(f, fI, PnI)
+        PnJ = np.interp(f, fJ, PnJ)
+        
+        orfIJ = overlap.Response.overlap(det1, det2, f, psi, pol, shift_angle, Stokes_parameter)
+        beta, Omega = all_Omega_GW(f, fref, snr, Tobs, orfIJ, PnI, PnJ)
+
+        pls = np.max(Omega, axis=0)
+        return pls
+    
     else:
-        orfIJ = overlap.Response.overlap(det1, det2, f, psi, pol, shift_angle)
+        raise ValueError('Unknown detectors or networks')
 
-    beta, Omega = all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, orfIJ, PnI, PnJ)
 
-    pls = np.zeros(len(f))
-    for i in range(len(f)):
-        pls[i] = np.max(Omega[:,i])
-    return pls
 
 
 def PLS_2pol(det1, det2, det3, f, fref, pol, snr, Tobs, beta_min, beta_max, psi, shift_angle, fI=None, PnI=None, fJ=None, PnJ=None, fK=None, PnK=None):
@@ -174,6 +215,7 @@ def PLS_2pol(det1, det2, det3, f, fref, pol, snr, Tobs, beta_min, beta_max, psi,
         pls[i] = np.max(Omega[:,i])
 
     return pls
+
 
 
 def PLS_3pol(det1, det2, det3, f, fref, pol, snr, Tobs, beta_min, beta_max, psi, shift_angle, fI=None, PnI=None, fJ=None, PnJ=None, fK=None, PnK=None):
@@ -286,70 +328,4 @@ def PLS_3pol(det1, det2, det3, f, fref, pol, snr, Tobs, beta_min, beta_max, psi,
 
     return pls
 
-    
 
-def PLS_LISA(f, fref, pol, snr, Tobs, beta_min, beta_max, psi):
-
-    '''
-   Parameters:
-
-    - f = array_like (Frequency in Hz)
-    - fref = float (Reference frequency in Hz)
-    - pol = str (Polarization of the signal, 't' for tensor, 'v' for vector, 's' for scalar)
-    - snr = float (Signal-to-noise ratio threshold)
-    - Tobs = float (Observation time in years)
-    - beta_min = float (Minimum tilt to consider)
-    - beta_max = float (Maximum tilt to consider)
-    - psi = float (Polarization angle in radians)
-
-    return: PLS array - weighted for all channels
-
-    '''
-
-    def S_eff(f, fref, snr, Tobs, orf, Ni, Nj):
-        return np.sqrt(Ni*Nj)/np.abs(orf)
-
-    def Omega_eff(f, fref, snr, Tobs, orf, Ni, Nj):
-        return 4 * np.pi**2  /(3* (H0**2)/(h**2))* f**3 * S_eff(f, fref, snr, Tobs, orf, Ni, Nj)
-        
-    def Omega_beta(f, fref, snr, Tobs, beta, orf, Ni, Nj):
-        Tobs = Tobs * 365 * 24 * 3600
-        Omega_eff_num = Omega_eff(f, fref, snr, Tobs, orf, Ni, Nj)
-        integrand = (((f/fref)**(beta)) / (Omega_eff_num))**2
-        integral = np.trapz(integrand, f)
-        return  snr /np.sqrt(2*Tobs)/np.sqrt(integral)
-
-    def Omega_GW(f, fref, snr, Tobs, beta, orf, Ni, Nj):
-        return Omega_beta(f, fref, snr, Tobs, beta, orf, Ni, Nj) * ((f/fref)**(beta))
-
-    def all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, orf, Ni, Nj):
-        beta = np.linspace(beta_min, beta_max, 1000)
-        Omega = []
-        for i in range(len(beta)):
-            Omega.append(Omega_GW(f, fref, snr, Tobs, beta[i], orf, Ni, Nj))     
-        return beta, np.array(Omega)
-
-
-    psd_A = LISA_noise_AET(f, 'A')
-    psd_E = LISA_noise_AET(f, 'E')
-    psd_T = LISA_noise_AET(f, 'T')
-
-    R_AA = R_EE = Response.overlap_AET('AA', f, psi, pol)
-    R_TT = Response.overlap_AET('TT', f, psi, pol)
-
-    _, Omega_A = all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, R_AA, psd_A, psd_A)
-    _, Omega_E = all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, R_EE, psd_E, psd_E)
-    _, Omega_T = all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, R_TT, psd_T, psd_T)
-
-    pls_A = np.zeros(len(f))
-    pls_E = np.zeros(len(f))
-    pls_T = np.zeros(len(f))
-
-    for i in range(len(f)):
-        pls_A[i] = np.max(Omega_A[:,i])
-        pls_E[i] = np.max(Omega_E[:,i])
-        pls_T[i] = np.max(Omega_T[:,i])
-
-    pls = np.array([pls_A, pls_E, pls_T])
-
-    return np.sum(1/pls**2, axis=0)**(-0.5)

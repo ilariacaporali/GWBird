@@ -19,6 +19,10 @@ plt.rcParams['font.family'] = 'serif'
 
 obs = det.Observatories()
 
+
+# descrizione del codice
+
+
 class Basis:
 
 
@@ -31,19 +35,19 @@ class Basis:
             np.sin(Phi_mesh), 
             -np.cos(Phi_mesh), 
             np.zeros_like(Theta_mesh)
-        ], axis=0)  # Assicura che sia (3, ...)
+        ], axis=0)  
 
         m = np.stack([
             np.cos(Phi_mesh) * np.cos(Theta_mesh),
             np.sin(Phi_mesh) * np.cos(Theta_mesh),
             -np.sin(Theta_mesh)
-        ], axis=0)  # Assicura che sia (3, ...)
+        ], axis=0)  
 
         Omega = np.stack([
             np.cos(Phi_mesh) * np.sin(Theta_mesh),
             np.sin(Phi_mesh) * np.sin(Theta_mesh),
             np.cos(Theta_mesh)
-        ], axis=0)  # Assicura che sia (3, ...)
+        ], axis=0)  
 
         return m, n, Omega
 
@@ -65,7 +69,7 @@ class PolarizationTensors:
 
         return e_plus, e_cross, e_x, e_y, e_b, e_l
     
-    def e_pol_RL(theta, phi, psi):  
+    def e_pol_RL(theta, phi, psi):  # change LR
 
         '''
         Polarization modes in the general orthonormal basis (m,n, Omega)
@@ -149,6 +153,8 @@ class Skymaps:
             
 
     def AntennaPattern(det1, det2, nside, f, psi, shift_angle=None):
+            
+            # specificare la polarizzazione
         
             ec1, u1, v1, l1, which_det1 = det.detector(det1, shift_angle)
             ec2, u2, v2, l2, which_det2 = det.detector(det2, shift_angle)
@@ -159,13 +165,13 @@ class Skymaps:
             theta = theta.reshape(-1, 1)
             phi = phi.reshape(-1, 1)
             
-            f = np.array([f])
+            f = np.array([f]) # check if this is correct
             f = f.reshape(len(f), 1, 1)
                  
             F1 = AngularPatternFunction.F(theta, phi, psi, ec1, u1, v1, f, l1)
             F2 = AngularPatternFunction.F(theta, phi, psi, ec2, u2, v2, f, l2)
 
-            if det1 == 'LISA 1' or det1 == 'LISA 2' or det1 == 'LISA 3':
+            if det1 == 'LISA 1' or det1 == 'LISA 2' or det1 == 'LISA 3': # in det starts for LISA...
                 overlap_t = 1/(4*np.pi) * np.real(F1[0]*np.conj(F2[0]) + F1[1]*np.conj(F2[1]))
                 overlap_v = 1/(4*np.pi) * np.real(F1[2]*np.conj(F2[2]) + F1[3]*np.conj(F2[3]))
                 overlap_s = 3/(2*np.pi) * np.real(F1[4]*np.conj(F2[4]))

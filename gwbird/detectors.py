@@ -38,7 +38,7 @@ class Observatories:
 
     # 2G detectors
 
-    def LIGO_hanford(self):
+    def LIGO_hanford(self): # aggiungere referenza
         c = np.array([-0.33827472, -0.60015338, 0.72483525]) * REarth
         xA = np.array([-0.22389266154, 0.79983062746, 0.55690487831])
         xB = np.array([-0.91397818574, 0.02609403989, -0.40492342125])
@@ -66,6 +66,8 @@ class Observatories:
         l = 3e3  # m
         return c, xA, xB, l, "KAGRA"
     
+    # 3G detectors
+    
     # Cosmic Explorer in the location of LIGO Hanford
 
     def CE(self):
@@ -84,17 +86,17 @@ class Observatories:
         l = 1e4  # m
         return xA, xB, xC, lBA, lCA, lBC, l
 
-    def ET_A(self):
+    def ET_X(self):
         xA, xB, xC, lBA, lCA, lBC, l= self.ET_arms()
-        return xA * l, lBA, lCA, l, "ET A"
+        return xA * l, lBA, lCA, l, "ET X"
 
-    def ET_B(self):
+    def ET_Y(self):
         xA, xB, xC, lBA, lCA, lBC, l = self.ET_arms()
-        return xB * l, -lBC, -lBA, l, "ET B"
+        return xB * l, -lBC, -lBA, l, "ET Y"
 
-    def ET_C(self):
+    def ET_Z(self):
         xA, xB, xC, lBA, lCA, lBC, l = self.ET_arms()
-        return xC * l, -lCA, lBC, l, "ET C"
+        return xC * l, -lCA, lBC, l, "ET Z"
     
     # Einstein Telescope (ET) - L-shaped configuration
 
@@ -116,6 +118,9 @@ class Observatories:
         xB2 = Rotations.rot_axis(xB2_int, beta, rot_ax)
         return c2, xA2, xB2, l, "ET L-shaped Netherlands"
 
+    # space-based
+
+    # mettere X, Y, Z
 
     # LISA (Laser Interferometer Space Antenna)
 
@@ -129,43 +134,17 @@ class Observatories:
         lBC = xB - xC
         return xA, xB, xC, lBA, lCA, lBC, l
 
-    def LISA1(self):
+    def LISA_X(self):
         xA, xB, xC, lBA, lCA, lBC, l = self.LISA_arms()
-        return xA * l, lBA, lCA, l, "LISA 1"
+        return xA * l, lBA, lCA, l, "LISA X"
 
-    def LISA2(self):
+    def LISA_Y(self):
         xA, xB, xC, lBA, lCA, lBC, l = self.LISA_arms()
-        return xB * l, -lBC, -lBA, l, "LISA 2"
+        return xB * l, -lBC, -lBA, l, "LISA Y"
 
-    def LISA3(self):
+    def LISA_Z(self):
         xA, xB, xC, lBA, lCA, lBC, l = self.LISA_arms()
-        return xC * l, -lCA, lBC, l, "LISA 3"
-    
-
-    def Taiji_arms(self):
-        l = 3.0e9  # arm length
-        xA = np.array([0., 0., 0.])
-        xB = np.array([+1/2., np.sqrt(3)/2, 0])
-        xC = np.array([-1/2, np.sqrt(3)/2, 0])
-        lBA = xB - xA
-        lCA = xC - xA
-        lBC = xB - xC
-        return xA, xB, xC, lBA, lCA, lBC, l
-
-    def Taiji1(self):
-        xA, xB, xC, lBA, lCA, lBC, l = self.Taiji_arms()
-        return xA * l, lBA, lCA, l, "Taiji 1"
-
-    def Taiji2(self):
-        xA, xB, xC, lBA, lCA, lBC, l = self.Taiji_arms()
-        return xB * l, -lBC, -lBA, l, "Taiji 2"
-
-    def Taiji3(self):
-        xA, xB, xC, lBA, lCA, lBC, l = self.Taiji_arms()
-        return xC * l, -lCA, lBC, l, "Taiji 3"
-
-    
-    
+        return xC * l, -lCA, lBC, l, "LISA Z"
     
 
 
@@ -182,14 +161,14 @@ def detector(det_name: str, shift_angle=None, c=None, xA=None, xB=None, l=None, 
         "Virgo":  observatories.Virgo,
         "KAGRA":  observatories.KAGRA,
         "CE":     observatories.CE,
-        "ET A":   observatories.ET_A,
-        "ET B":   observatories.ET_B,
-        "ET C":   observatories.ET_C,
+        "ET X":   observatories.ET_X, 
+        "ET Y":   observatories.ET_Y,
+        "ET Z":   observatories.ET_Z,
         "ET L1":  observatories.ET_L_sardinia,
         "ET L2":  lambda angle=shift_angle: observatories.ET_L_netherlands(angle),
-        "LISA 1": observatories.LISA1,
-        "LISA 2": observatories.LISA2,
-        "LISA 3": observatories.LISA3
+        "LISA X": observatories.LISA_X, 
+        "LISA Y": observatories.LISA_Y,
+        "LISA Z": observatories.LISA_Z
     }
     
     if det_name in detectors:
@@ -206,7 +185,7 @@ def available_detectors():
     '''
     List of available detectors
     '''
-    return ['LIGO H', 'LIGO L', 'Virgo', 'KAGRA', 'CE', 'ET A', 'ET B', 'ET C', 'ET L1', 'ET L2', 'LISA 1', 'LISA 2', 'LISA 3']
+    return ['LIGO H', 'LIGO L', 'Virgo', 'KAGRA', 'CE', 'ET X', 'ET Y', 'ET Z', 'ET L1', 'ET L2', 'LISA X', 'LISA Y', 'LISA Z']
     
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -220,7 +199,7 @@ def detector_Pn(det_name):
     """
     Method to return the PSD of the observatories
     """
-    base_path = 'psd/'  # path to the PSD files
+    base_path = 'psd/'  # path to the PSD files # aggiungere referenze
     file_map = {
         'LIGO H': 'aligo_design.txt',
         'LIGO L': 'aligo_design.txt',
@@ -228,13 +207,13 @@ def detector_Pn(det_name):
         'KAGRA':  'kagra.txt',
         'ET L1':  '18213_ET15kmcolumns.txt',
         'ET L2':  '18213_ET15kmcolumns.txt',
-        'ET A':   'ET_Sh_coba.txt',
-        'ET B':   'ET_Sh_coba.txt',
-        'ET C':   'ET_Sh_coba.txt',
+        'ET X':   'ET_Sh_coba.txt',
+        'ET Y':   'ET_Sh_coba.txt',
+        'ET Z':   'ET_Sh_coba.txt',
         'CE':     'ce1.txt',
-        'LISA 1': 'lisa_noise.txt', # A channel
-        'LISA 2': 'lisa_noise.txt', # A channel
-        'LISA 3': 'lisa_noise.txt'  # A channel
+        'LISA X': 'lisa_noise.txt', # A channel # modificare
+        'LISA Y': 'lisa_noise.txt', # A channel
+        'LISA Z': 'lisa_noise.txt'  # A channel
     }
 
     if det_name.startswith('ET L'):
