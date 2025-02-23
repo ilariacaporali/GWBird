@@ -6,7 +6,7 @@ from gwbird.overlap import Response
 from gwbird.utils import c, H0, h
 
 
-def PLS(det1, det2, f, fref, pol, snr, Tobs, psi, Stokes_parameter=False, shift_angle=False, fI=None, PnI=None, fJ=None, PnJ=None):
+def PLS(det1, det2, f, fref, pol, snr, Tobs, psi, shift_angle=False, fI=None, PnI=None, fJ=None, PnJ=None):
     '''
     Evaluate the sensitivity of a pair of detectors or a network of detectors to a Gravitational Wave Background (GWB) signal.
 
@@ -139,7 +139,7 @@ def PLS(det1, det2, f, fref, pol, snr, Tobs, psi, Stokes_parameter=False, shift_
         PnI = np.interp(f, fI, PnI)
         PnJ = np.interp(f, fJ, PnJ)
         
-        orfIJ = overlap.Response.overlap(det1, det2, f, psi, pol, shift_angle, Stokes_parameter)
+        orfIJ = overlap.Response.overlap(det1, det2, f, psi, pol, shift_angle)
         beta, Omega = all_Omega_GW(f, fref, snr, Tobs, orfIJ, PnI, PnJ)
 
         pls = np.max(Omega, axis=0)

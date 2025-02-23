@@ -2,6 +2,7 @@ import numpy as np
 from numpy import pi, sin, cos, sqrt
 from scipy.spatial.transform import Rotation as R
 from gwbird.utils import REarth
+from gwbird.psd import psd_dir
 
 
 #***************************************************************************************************************
@@ -199,7 +200,7 @@ def detector_Pn(det_name):
     """
     Method to return the PSD of the observatories
     """
-    base_path = 'psd/'  # path to the PSD files # aggiungere referenze
+    base_path = psd_dir  # path to the PSD files # aggiungere referenze
     file_map = {
         'LIGO H': 'aligo_design.txt', # https://dcc.ligo.org/LIGO-T1500293/public
         'LIGO L': 'aligo_design.txt', # https://dcc.ligo.org/LIGO-T1500293/public
@@ -218,12 +219,12 @@ def detector_Pn(det_name):
 
     if det_name.startswith('ET L'):
         file_name = file_map[det_name]
-        f, Pn = np.loadtxt(base_path + file_name, delimiter= None, usecols=(0,3), unpack=True)
+        f, Pn = np.loadtxt(base_path + '/' + file_name, delimiter= None, usecols=(0,3), unpack=True)
         return f, Pn
     
     elif det_name in file_map:
         file_name = file_map[det_name]
-        f, Pn = np.loadtxt(base_path + file_name, unpack=True)
+        f, Pn = np.loadtxt(base_path + '/' + file_name, unpack=True)
         return f, Pn**2
 
     else:
