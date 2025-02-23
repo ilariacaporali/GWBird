@@ -5,8 +5,9 @@ setup(
     version="0.1.0",
     packages=find_packages(),
     include_package_data=True,
+    package_data={"gwbird": ["psd/*.txt"]},
     install_requires=[
-        "numpy",
+        "numpy>=2.0.0",
         "scipy",
         "matplotlib",   
         "healpy",
