@@ -1,3 +1,5 @@
+![Test Status](https://img.shields.io/badge/Tests-Passed-brightgreen)
+
 # GWBird 🥚
 
 GWBird is a Python package that allows computing the response and sensitivity of a network of detectors to a stochastic gravitational wave background.
