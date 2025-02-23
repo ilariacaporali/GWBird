@@ -12,14 +12,32 @@ from gwbird.skymap import AngularPatternFunction
 
 class Response:
 
-    def R_integrand(x, y, psi, c1, xA1, xB1, c2, xA2, xB2, c, f, L, pol):
+    def R_integrand(x, y, psi, c1, xA1, xB1, l1, c2, xA2, xB2, f, l2, pol):
         
         '''
         Integrand of the overlap reduction function
+
+        x: polar angle (float)
+        y: azimuthal angle (float)
+        psi: polarization angle (float)
+        c1: position of the first detector (array float)
+        xA1: unit vector pointing towards the first detector first arm(array float)
+        xB1: unit vector pointing towards the first detector second arm (array float)
+        l1 : length of the arm of the first detector (float)
+        c2: position of the second detector (array float)
+        xA2: unit vector pointing towards the second detector first arm (array float)
+        xB2: unit vector pointing towards the second detector second arm (array float)
+        l2: length of the arm of the second detector (float
+        c: speed of light (float)
+        f: frequency array (array float)
+        pol: polarization mode (string)
+
+        return: integrand of the overlap reduction function
+
         '''
 
-        F1 = AngularPatternFunction.F(x, y, psi, c1, xA1, xB1, f, L)
-        F2 = AngularPatternFunction.F(x, y, psi, c2, xA2, xB2, f, L)
+        F1 = AngularPatternFunction.F(x, y, psi, c1, xA1, xB1, f, l1)
+        F2 = AngularPatternFunction.F(x, y, psi, c2, xA2, xB2, f, l2)
 
         f = f.reshape(len(f), 1, 1)
 
@@ -40,93 +58,57 @@ class Response:
                 ( F1[4]* np.conj( F2[4]) ) \
                 * sin(x)
         
-                   
+        elif (pol =='I'): # https://arxiv.org/pdf/0707.0535
+            return (5/(8*pi))*\
+                ( F1[0]* np.conj( F2[0]) \
+                + F1[1] *np.conj(F2[1])) \
+                *sin(x)
+        
+        elif(pol=='V'): # https://arxiv.org/pdf/0707.0535
+            return 1j*(5/(8*pi))*\
+                ( F1[0]* np.conj( F2[1]) \
+                - F1[1] *np.conj(F2[0])) \
+                *sin(x)
+     
         else:
             raise ValueError('Unknown polarization')
         
-    def R_integrand_RL(x, y, psi, c1, xA1, xB1, c2, xA2, xB2, c, f, L, pol):
-
-        '''
-        Integrand of the overlap reduction function in the RL configuration
-        '''
-
-        F1 = AngularPatternFunction.F_RL(x, y, psi, c1, xA1, xB1, f, L)
-        F2 = AngularPatternFunction.F_RL(x, y, psi, c2, xA2, xB2, f, L)
-
-        f = f.reshape(len(f), 1, 1)
-
-        if (pol == 'R'):
-            return (5/(8*pi))*\
-                ( F1[0]* np.conj( F2[0])) \
-                *sin(x)
-        
-        elif (pol == 'L'):
-            return (5/(8*pi))*\
-                ( F1[1]* np.conj( F2[1]) ) \
-                *sin(x)
-        
-        else:
-            raise ValueError('Unknown polarization')
 
 
-    def R_func(xA1, xB1, c1, l1, xA2, xB2, c2, l2, psi, f, L, pol):
+
+
+    def R_func(xA1, xB1, c1, l1, xA2, xB2, c2, l2, psi, f, pol):
         
         '''
         Overlap reduction function for a given polarization
+
+        xA1: unit vector pointing towards the first detector first arm(array float)
+        xB1: unit vector pointing towards the first detector second arm (array float)
+        c1: position of the first detector (array float)
+        l1: length of the arm of the first detector (float)
+        xA2: unit vector pointing towards the second detector first arm (array float)
+        xB2: unit vector pointing towards the second detector second arm (array float)
+        c2: position of the second detector (array float)
+        l2: length of the arm of the second detector (float)
+        psi: polarization angle (float)
+        f: frequency array (array float)
+        L: length of the arm (float)
+        pol: polarization mode (string)
+
+        return: overlap reduction function
         '''
 
         x_values = np.linspace(0, pi, 100)
         y_values = np.linspace(0, 2*pi, 100)
-        X, Y = np.meshgrid(x_values,y_values) 
-        f_values = Response.R_integrand(X, Y, psi, c1, xA1, xB1, c2, xA2, xB2, c, f, L, pol) # gamma values
+        X, Y = np.meshgrid(x_values,y_values)  
+        f_values = Response.R_integrand(X, Y, psi, c1, xA1, xB1, l1, c2, xA2, xB2, f, l2, pol) # gamma values
         gamma_x = np.trapz(f_values, x_values, axis=1)
         gamma = np.trapz(gamma_x, y_values)
         return np.real(gamma) 
     
-    def R_func_RL(xA1, xB1, c1, l1, xA2, xB2, c2, l2, psi, f, L, pol):
-
-        '''
-        Overlap reduction function for a given polarization in the RL configuration
-        '''
-
-        x_values = np.linspace(0, pi, 100)
-        y_values = np.linspace(0, 2*pi, 100)
-        X, Y = np.meshgrid(x_values,y_values) 
-        f_values = Response.R_integrand_RL(X, Y, psi, c1, xA1, xB1, c2, xA2, xB2, c, f, L, pol)
-        gamma_x = np.trapz(f_values, x_values, axis=1)
-        gamma = np.trapz(gamma_x, y_values)
-        return np.real(gamma)
-    
-    def overlap_RL(det1, det2, f, psi, pol, shift_angle=False):
-
-        '''
-        det1, det2: detectors (string)
-        f: frequency array (array float)
-        psi: polarization angle (float)
-        pol: polarization mode (string)
-        shift_angle: shift angle between detectors (None or float)
-
-        return: overlap reduction function in the RL configuration
-        '''
-
-        if isinstance(det1, str):
-            c1, xA1, xB1, l1, _ = detectors.detector(det1, shift_angle)
-        else:
-            c1, xA1, xB1, l1, _ = det1
-
-        if isinstance(det2, str):
-            c2, xA2, xB2, l2, _ = detectors.detector(det2, shift_angle)
-        else:
-            c2, xA2, xB2, l2, _ = det2
 
 
-        result = Response.R_func_RL(xA1, xB1, c1, l1, xA2, xB2, c2, l2, psi, f, l1, pol)
-
-
-        return np.array(result)
-
-
-    def overlap(det1, det2, f, psi, pol, shift_angle=False, Stokes_parameter=False):
+    def overlap(det1, det2, f, psi, pol, shift_angle=False):
         """
         Calculate the overlap response between two detectors.
 
@@ -215,8 +197,8 @@ class Response:
             det_x, det_y, factor = special_map[(name1, name2)]
             c1, xA1, xB1, l1, _ = detectors.detector(det_x, shift_angle=None)
             c2, xA2, xB2, l2, _ = detectors.detector(det_y, shift_angle=None)
-            auto = Response.R_func(xA1, xB1, c1, l1, xA1, xB1, c1, l1, psi, f, l1, pol)
-            cross = Response.R_func(xA1, xB1, c1, l1, xA2, xB2, c2, l2, psi, f, l1, pol)
+            auto = Response.R_func(xA1, xB1, c1, l1, xA1, xB1, c1, l1, psi, f, pol)
+            cross = Response.R_func(xA1, xB1, c1, l1, xA2, xB2, c2, l2, psi, f, pol)
             return auto + factor * cross
 
         # Check for invalid combinations
@@ -224,19 +206,11 @@ class Response:
         if (name1 in special_channels or name2 in special_channels) and (name1 != name2):
             raise ValueError("Put a valid combination of channels")
         
-        # Handle Stokes parameters if pol = 't'
-        if pol == 't' and Stokes_parameter in ['I', 'V']:
-            R_L = Response.overlap_RL(det1, det2, f, psi, 'L')
-            R_R = Response.overlap_RL(det1, det2, f, psi, 'R')
-            if Stokes_parameter == 'I':
-                return (R_L + R_R)
-            elif Stokes_parameter == 'V':
-                return (-R_L + R_R)
         
-        # General case
-        return np.array(Response.R_func(xA1, xB1, c1, l1, xA2, xB2, c2, l2, psi, f, l1, pol))
+        # General case    
+        return np.array(Response.R_func(xA1, xB1, c1, l1, xA2, xB2, c2, l2, psi, f, pol))
 
-                    
+     
 
     
 

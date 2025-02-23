@@ -38,28 +38,28 @@ class Observatories:
 
     # 2G detectors
 
-    def LIGO_hanford(self): # aggiungere referenza
+    def LIGO_hanford(self): # Mentasti et al. 2023 https://arxiv.org/pdf/2304.06640 Appendix D, figure 8
         c = np.array([-0.33827472, -0.60015338, 0.72483525]) * REarth
         xA = np.array([-0.22389266154, 0.79983062746, 0.55690487831])
         xB = np.array([-0.91397818574, 0.02609403989, -0.40492342125])
         l = 4e3  # m
         return c, xA, xB, l, "LIGO Hanford"
 
-    def LIGO_livingston(self):
+    def LIGO_livingston(self): # Mentasti et al. 2023 https://arxiv.org/pdf/2304.06640 Appendix D, figure 8
         c = np.array([-0.01163537, -0.8609929, 0.50848387]) * REarth
         xA = np.array([-0.95457412153, -0.14158077340, -0.26218911324])
         xB = np.array([0.29774156894, -0.48791033647, -0.82054461286])
         l = 4e3  # m
         return c, xA, xB, l, "LIGO Livingston"
 
-    def Virgo(self):
+    def Virgo(self): # Mentasti et al. 2023 https://arxiv.org/pdf/2304.06640 Appendix D, figure 8
         c = np.array([0.71166465, 0.13195706, 0.69001505]) * REarth
         xA = np.array([-0.701, 0.201, 0.684])
         xB = np.array([-0.0485, -0.971, 0.236])
         l = 3e3  # m
         return c, xA, xB, l, "Virgo"
 
-    def KAGRA(self):
+    def KAGRA(self): # Mentasti et al. 2023 https://arxiv.org/pdf/2304.06640 Appendix D, figure 8
         c = np.array([-0.59149285, 0.54570304, 0.59358605]) * REarth
         xA = np.array([-0.390, -0.838, 0.382])
         xB = np.array([0.706, -0.00580, 0.709])
@@ -70,7 +70,7 @@ class Observatories:
     
     # Cosmic Explorer in the location of LIGO Hanford
 
-    def CE(self):
+    def CE(self): # Mentasti et al. 2023 https://arxiv.org/pdf/2304.06640 Appendix D, figure 8
         c, xA, xB, l, _ = self.LIGO_hanford()
         return c, xA, xB, 4e4, "Cosmic Explorer"
 
@@ -100,14 +100,14 @@ class Observatories:
     
     # Einstein Telescope (ET) - L-shaped configuration
 
-    def ET_L_sardinia(self):
+    def ET_L_sardinia(self): # Branchesi et al 2023 https://arxiv.org/pdf/2303.15923
         c = np.array([0.7499728, 0.12438134, 0.64966921]) * REarth
         xA = np.array([-0.639881, -0.106494, 0.761506])
         xB = Rotations.rot_axis(xA, pi/2, c)
         l = 1.5e4 # m
         return c, xA, xB, l, "ET L-shaped Sardinia"
 
-    def ET_L_netherlands(self, shift_angle=None):
+    def ET_L_netherlands(self, shift_angle=None): # Branchesi et al 2023 https://arxiv.org/pdf/2303.15923
         c1, xA1, xB1, l, _ = self.ET_L_sardinia()
         c2 = np.array([0.62969256, 0.06530073, 0.77409502]) * REarth
         xA2_int = Rotations.rot_axis(xA1, shift_angle, c1) if shift_angle else xA1
@@ -201,17 +201,17 @@ def detector_Pn(det_name):
     """
     base_path = 'psd/'  # path to the PSD files # aggiungere referenze
     file_map = {
-        'LIGO H': 'aligo_design.txt',
-        'LIGO L': 'aligo_design.txt',
-        'Virgo':  'advirgo.txt',
-        'KAGRA':  'kagra.txt',
-        'ET L1':  '18213_ET15kmcolumns.txt',
-        'ET L2':  '18213_ET15kmcolumns.txt',
-        'ET X':   'ET_Sh_coba.txt',
-        'ET Y':   'ET_Sh_coba.txt',
-        'ET Z':   'ET_Sh_coba.txt',
-        'CE':     'ce1.txt',
-        'LISA X': 'lisa_noise.txt', # A channel # modificare
+        'LIGO H': 'aligo_design.txt', # https://dcc.ligo.org/LIGO-T1500293/public
+        'LIGO L': 'aligo_design.txt', # https://dcc.ligo.org/LIGO-T1500293/public
+        'Virgo':  'advirgo.txt', # https://dcc.ligo.org/LIGO-T1500293/public
+        'KAGRA':  'kagra.txt', # https://dcc.ligo.org/LIGO-T1500293/public
+        'ET L1':  '18213_ET15kmcolumns.txt', # Coba
+        'ET L2':  '18213_ET15kmcolumns.txt', # Coba
+        'ET X':   'ET_Sh_coba.txt', # Coba
+        'ET Y':   'ET_Sh_coba.txt', # Coba
+        'ET Z':   'ET_Sh_coba.txt', # Coba
+        'CE':     'ce1.txt', # https://dcc.ligo.org/LIGO-T1500293/public
+        'LISA X': 'lisa_noise.txt', # A channel 
         'LISA Y': 'lisa_noise.txt', # A channel
         'LISA Z': 'lisa_noise.txt'  # A channel
     }
@@ -232,6 +232,8 @@ def detector_Pn(det_name):
 
 def LISA_noise_AET(f, channel):
         
+        # Bartolo et al. 2022 https://arxiv.org/abs/2201.08782 Appendix B
+        
         L = 2.5*1e9 #m
         c = 3*1e8 #m/s
         P = 15
@@ -241,12 +243,12 @@ def LISA_noise_AET(f, channel):
         f_star =c/(2*np.pi*L) # Hz
 
 
-        def NA(f):
+        def NA(f): #  Bartolo et al. 2022 https://arxiv.org/abs/2201.08782 Appendix B eq. B.14
             N = 0.5 * (2 + cos(f/f_star)) * P**2 / L**2 * pm**2 * ( 1 + (0.002/f)**4 ) + \
                 2 * ( 1 + cos(f/f_star) + cos(f/f_star)**2 ) * A**2 / L**2 *fm**2 * (1 + (0.0004/f)**2 ) * (1 + (f/(8*1e-3))**4 ) * ((1/(2* pi*f))**4)
             return N
     
-        def NT(f):
+        def NT(f): #  Bartolo et al. 2022 https://arxiv.org/abs/2201.08782 Appendix B eq. B.15
             N = (1 - cos(f/f_star)) * P**2 / L**2 * pm**2 * ( 1 + (0.002/f)**4 ) + \
                 2 * ( 1 - cos(f/f_star) )**2 * A**2 / L**2 *fm**2 * (1 + (0.0004/f)**2 ) * (1 + (f/(0.008))**4 ) * ((1/(2* pi*f))**4)
             return N

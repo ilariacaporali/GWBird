@@ -26,28 +26,60 @@ obs = det.Observatories()
 class Basis:
 
 
-    def m_n_Omega_basis(Theta_mesh, Phi_mesh, psi):
+    def u_v_Omega_basis(theta, phi):
+
         '''
-        General polarization angle psi
+        Orthonormal basis in the direction of the incoming GW signal
+
+        Parameters:
+        theta: polar angle in [0, pi]
+        phi: azimuthal angle in [0, 2pi]
+
+        Returns:
+        u, v, Omega: orthonormal basis
+
         '''
         
-        n = np.stack([
-            np.sin(Phi_mesh), 
-            -np.cos(Phi_mesh), 
-            np.zeros_like(Theta_mesh)
+        u = np.stack([
+            np.cos(phi) * np.cos(theta),
+            np.sin(phi) * np.cos(theta),
+            -np.sin(theta)
+        ], axis=0) 
+        
+        v = np.stack([
+            np.sin(phi), 
+            -np.cos(phi), 
+            np.zeros_like(theta)
         ], axis=0)  
 
-        m = np.stack([
-            np.cos(Phi_mesh) * np.cos(Theta_mesh),
-            np.sin(Phi_mesh) * np.cos(Theta_mesh),
-            -np.sin(Theta_mesh)
-        ], axis=0)  
 
         Omega = np.stack([
-            np.cos(Phi_mesh) * np.sin(Theta_mesh),
-            np.sin(Phi_mesh) * np.sin(Theta_mesh),
-            np.cos(Theta_mesh)
+            np.cos(phi) * np.sin(theta),
+            np.sin(phi) * np.sin(theta),
+            np.cos(theta)
         ], axis=0)  
+
+        return u, v, Omega
+    
+    def m_n_Omega_basis(theta, phi, psi):
+
+        '''
+        General basis polarization angle psi
+
+        Parameters:
+        theta: polar angle in [0, pi]
+        phi: azimuthal angle in [0, 2pi]
+        psi: polarization angle in [0, 2pi]
+
+        Returns:
+        m, n, Omega: orthonormal basis with the rotation angle psi
+        '''
+
+        u, v, Omega = Basis.u_v_Omega_basis(theta, phi)
+
+        m = np.cos(psi) * u - np.sin(psi) * v
+        n = np.sin(psi) * u + np.cos(psi) * v
+        Omega = Omega
 
         return m, n, Omega
 
@@ -57,6 +89,14 @@ class PolarizationTensors:
 
         '''
         Polarization modes in the general orthonormal basis (m,n, Omega)
+
+        Parameters:
+        theta: polar angle in [0, pi]
+        phi: azimuthal angle in [0, 2pi]
+        psi: polarization angle in [0, 2pi]
+
+        Returns:
+        e_plus, e_cross, e_x, e_y, e_b, e_l: polarization tensors
         '''
 
         m, n, Omega = Basis.m_n_Omega_basis(theta, phi, psi)
@@ -73,6 +113,14 @@ class PolarizationTensors:
 
         '''
         Polarization modes in the general orthonormal basis (m,n, Omega)
+
+        Parameters:
+        theta: polar angle in [0, pi]
+        phi: azimuthal angle in [0, 2pi]
+        psi: polarization angle in [0, 2pi]
+
+        Returns:
+        e_R, e_L: polarization tensors (RIGHT/LEFT)
         '''
 
         m, n, Omega = Basis.m_n_Omega_basis(theta, phi, psi)
@@ -90,12 +138,23 @@ class TransferFunction:
 
         '''
         Transfer function to take into account the large antenna limit
+
+        Parameters:
+        L: arm length
+        l: unit vector
+        f: frequency
+        theta: polar angle in [0, pi]
+        phi: azimuthal angle in [0, 2pi]
+        psi: polarization angle in [0, 2pi]
+
+        Returns:
+        transfer function
         '''
 
-        omega = Basis.m_n_Omega_basis(theta, phi, psi)[2]
+        Omega = Basis.m_n_Omega_basis(theta, phi, psi)[2]
         f = f.reshape((len(f), 1, 1))
 
-        inner = np.einsum('iab,i', omega, l)
+        inner = np.einsum('iab,i', Omega, l)
         f_star = c / 2 / pi / L
         return 1 / 2 * (np.sinc(f / 2 / pi / f_star * (1 - inner)) * np.exp(-1j * f / 2 / f_star * (3 + inner)) \
                         + np.sinc(f / 2 / pi / f_star * (1 + inner)) * np.exp(-1j * f / 2 / f_star * (1 + inner)))
@@ -109,6 +168,16 @@ class AngularPatternFunction:
 
         '''
         Angular pattern function: detector response to an incoming GW signal
+
+        Parameters:
+        theta: polar angle in [0, pi]
+        phi: azimuthal angle in [0, 2pi]
+        psi: polarization angle in [0, 2pi]
+        ce: vector of the centre of the Detector
+        e1: unit vector of the Detector 1st arm
+        e2: unit vector of the Detector 2nd arm
+        f: frequency
+        L: arm length
         '''
 
         e_plus, e_cross, e_x, e_y, e_b, e_l = PolarizationTensors.e_pol(theta, phi, psi)
@@ -132,6 +201,16 @@ class AngularPatternFunction:
          
         '''
         Angular pattern function: detector response to an incoming GW signal
+
+        Parameters:
+        theta: polar angle in [0, pi]
+        phi: azimuthal angle in [0, 2pi]
+        psi: polarization angle in [0, 2pi]
+        ce: vector of the centre of the Detector
+        e1: unit vector of the Detector 1st arm
+        e2: unit vector of the Detector 2nd arm
+        f: frequency
+        L: arm length
         '''
 
         e_R, e_L = PolarizationTensors.e_pol_RL(theta, phi, psi)

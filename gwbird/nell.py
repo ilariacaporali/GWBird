@@ -199,9 +199,9 @@ class Sensitivity_ell:
             fref (float): Reference frequency.
             snr (float): Signal-to-noise ratio threshold.
             Tobs (float): Observation time in years.
-            Cl (float): Cl parameter for multipole ℓ.
+            Cl (float): Cl parameter for multipole.
             fI, PnI, fJ, PnJ (array, optional): Frequency and noise power spectral density for custom detectors.
-
+            
         Returns:
             array: Sensitivity PLS_ell.
         """
