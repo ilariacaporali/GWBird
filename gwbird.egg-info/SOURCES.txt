@@ -1,7 +1,0 @@
-README
-setup.py
-gwbird.egg-info/PKG-INFO
-gwbird.egg-info/SOURCES.txt
-gwbird.egg-info/dependency_links.txt
-gwbird.egg-info/requires.txt
-gwbird.egg-info/top_level.txt
