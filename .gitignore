@@ -1,0 +1,12 @@
+# colpiled files
+*.pyc
+*.DS_Store
+
+# cached directories
+__pycache__/
+*.egg-info/
+
+# pypy files
+dist/
+build/
+examplepaper/
