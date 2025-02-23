@@ -28,7 +28,7 @@ To use GWBird, make sure you have the following Python packages installed:
 2. Install the package in your selected environment by running:
 
    ```sh
-   pip install -e .
+   pip install .
    ```
 
 3. Now you can import GWBird in your Python scripts:
