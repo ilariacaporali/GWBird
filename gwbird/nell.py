@@ -48,8 +48,8 @@ class AngularResponse:
 
         f_values = AngularResponse.Rellm_integrand(l, m, X, Y, psi, c1, u1, v1, c2, u2, v2, c, f, pol, L)
 
-        gamma_x = np.trapz(f_values, x_values.reshape(1, 100, 1), axis=1)
-        gamma = np.trapz(gamma_x, y_values.reshape(1, 1, 100))
+        gamma_x = np.trapezoid(f_values, x_values.reshape(1, 100, 1), axis=1)
+        gamma = np.trapezoid(gamma_x, y_values.reshape(1, 1, 100))
 
         real_part = np.array([mp.mpf(x.real) for row in gamma for x in row])
         imag_part = np.array([mp.mpf(x.imag) for row in gamma for x in row])
@@ -223,7 +223,7 @@ class Sensitivity_ell:
             """Computes Omega_beta."""
             Tobs_sec = Tobs * 365 * 24 * 3600
             integrand = (((f/fref)**beta) / Omega_eff_l)**2 * Cl
-            integral = np.trapz(integrand, f)
+            integral = np.trapezoid(integrand, f)
             return snr / np.sqrt(2 * Tobs_sec) / np.sqrt(integral)
 
         def Omega_GW(f, fref, snr, Tobs, beta, Omega_eff_l):
@@ -433,154 +433,154 @@ class Sensitivity_ell:
 
 
 
-    def PLS_l_LISA(f, l, pol, fref, snr, Tobs, beta_min, beta_max, Cl, psi):
+    # def PLS_l_LISA(f, l, pol, fref, snr, Tobs, beta_min, beta_max, Cl, psi):
 
-        '''
-        Parameters:
-        - f = array_like (Frequency in Hz)
-        - Rl: array_like (Angular response for the multipole ell)
-        - fref = float (Reference frequency in Hz)
-        - snr = float (Signal-to-noise ratio threshold)
-        - Tobs = float (Observation time in years)
-        - beta_min = float (Minimum tilt to consider)
-        - beta_max = float (Maximum tilt to consider)
-        - Cl = float (Cl for the multipole ell)
-        - psi = float (Polarization angle in radians)
+    #     '''
+    #     Parameters:
+    #     - f = array_like (Frequency in Hz)
+    #     - Rl: array_like (Angular response for the multipole ell)
+    #     - fref = float (Reference frequency in Hz)
+    #     - snr = float (Signal-to-noise ratio threshold)
+    #     - Tobs = float (Observation time in years)
+    #     - beta_min = float (Minimum tilt to consider)
+    #     - beta_max = float (Maximum tilt to consider)
+    #     - Cl = float (Cl for the multipole ell)
+    #     - psi = float (Polarization angle in radians)
         
-        Return: array float (PLS for the multipole ell)
-        '''
-        if l == 0:
+    #     Return: array float (PLS for the multipole ell)
+    #     '''
+    #     if l == 0:
 
-            Rl_AA = AngularResponse.R_ell_AET(l, 'AA', pol, psi, f)
-            Rl_EE = Rl_AA
-            Rl_TT =  AngularResponse.R_ell_AET(l, 'TT', pol, psi, f)
+    #         Rl_AA = AngularResponse.R_ell_AET(l, 'AA', pol, psi, f)
+    #         Rl_EE = Rl_AA
+    #         Rl_TT =  AngularResponse.R_ell_AET(l, 'TT', pol, psi, f)
 
-            psd_A = det.LISA_noise_AET(f, 'A')
-            psd_E = det.LISA_noise_AET(f, 'E')
-            psd_T = det.LISA_noise_AET(f, 'T')
+    #         psd_A = det.LISA_noise_AET(f, 'A')
+    #         psd_E = det.LISA_noise_AET(f, 'E')
+    #         psd_T = det.LISA_noise_AET(f, 'T')
 
-            Nl_AA = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_A * psd_A) / Rl_AA
-            Nl_EE = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_E * psd_E) / Rl_EE
-            Nl_TT = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_T * psd_T) / Rl_TT
+    #         Nl_AA = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_A * psd_A) / Rl_AA
+    #         Nl_EE = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_E * psd_E) / Rl_EE
+    #         Nl_TT = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_T * psd_T) / Rl_TT
 
-            Nl = np.array([Nl_AA, Nl_EE, Nl_TT])
+    #         Nl = np.array([Nl_AA, Nl_EE, Nl_TT])
 
 
-            def Omega_beta(f, fref, snr, Tobs, beta, Omega_eff_l):
-                Tobs = Tobs * 365 * 24 * 3600
-                integrand = (((f/fref)**(beta)) / (Omega_eff_l))**2 * Cl
-                integral = np.trapz(integrand, f)
-                return  snr /np.sqrt(2*Tobs)/np.sqrt(integral)
+    #         def Omega_beta(f, fref, snr, Tobs, beta, Omega_eff_l):
+    #             Tobs = Tobs * 365 * 24 * 3600
+    #             integrand = (((f/fref)**(beta)) / (Omega_eff_l))**2 * Cl
+    #             integral = np.trapz(integrand, f)
+    #             return  snr /np.sqrt(2*Tobs)/np.sqrt(integral)
             
-            def Omega_GW(f, fref, snr, Tobs, beta, Omega_eff_l):
-                return Omega_beta(f, fref, snr, Tobs, beta, Omega_eff_l) * ((f/fref)**(beta))
+    #         def Omega_GW(f, fref, snr, Tobs, beta, Omega_eff_l):
+    #             return Omega_beta(f, fref, snr, Tobs, beta, Omega_eff_l) * ((f/fref)**(beta))
             
-            def all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, Omega_eff_l):
-                beta = np.linspace(beta_min, beta_max, 1000)
-                Omega = []
-                for i in range(len(beta)):
-                    Omega.append(Omega_GW(f, fref, snr, Tobs, beta[i], Omega_eff_l))     
-                return beta, np.array(Omega)
+    #         def all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, Omega_eff_l):
+    #             beta = np.linspace(beta_min, beta_max, 1000)
+    #             Omega = []
+    #             for i in range(len(beta)):
+    #                 Omega.append(Omega_GW(f, fref, snr, Tobs, beta[i], Omega_eff_l))     
+    #             return beta, np.array(Omega)
             
-            pls_l = np.zeros((len(Nl), len(f)))
-            for i in range(len(Nl[:,0])):
-                beta, Omega = all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, Nl[i,:])
-                for j in range(len(f)):
-                    pls_l[i, j] = np.max(Omega[:,j])
-
-            
-            return np.sum(1/(pls_l)**2, axis=0)**(-0.5)
-
-
-        elif l % 2 == 0 and l != 0:
-
-            Rl_AA = AngularResponse.R_ell_AET(l, 'AA', pol, psi, f)
-            Rl_EE = Rl_AA
-            Rl_TT =  AngularResponse.R_ell_AET(l, 'TT', pol, psi, f)
-            Rl_AE =  AngularResponse.R_ell_AET(l, 'AE', pol, psi, f)
-            Rl_AT =  AngularResponse.R_ell_AET(l, 'AT', pol, psi, f)
-            Rl_ET = Rl_AT
-
-            psd_A = det.LISA_noise_AET(f, 'A')
-            psd_E = det.LISA_noise_AET(f, 'E')
-            psd_T = det.LISA_noise_AET(f, 'T')
-
-            Nl_AA = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_A * psd_A) / Rl_AA
-            Nl_EE = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_E * psd_E) / Rl_EE
-            Nl_TT = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_T * psd_T) / Rl_TT
-            Nl_AE = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_A * psd_E) / Rl_AE
-            Nl_AT = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_A * psd_T) / Rl_AT
-            Nl_ET = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_E * psd_T) / Rl_ET
-
-            Nl = np.array([Nl_AA, Nl_EE, Nl_TT, Nl_AE, Nl_AT, Nl_ET])
-
-
-            def Omega_beta(f, fref, snr, Tobs, beta, Omega_eff_l):
-                Tobs = Tobs * 365 * 24 * 3600
-                integrand = (((f/fref)**(beta)) / (Omega_eff_l))**2 * Cl
-                integral = np.trapz(integrand, f)
-                return  snr /np.sqrt(2*Tobs)/np.sqrt(integral)
-            
-            def Omega_GW(f, fref, snr, Tobs, beta, Omega_eff_l):
-                return Omega_beta(f, fref, snr, Tobs, beta, Omega_eff_l) * ((f/fref)**(beta))
-            
-            def all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, Omega_eff_l):
-                beta = np.linspace(beta_min, beta_max, 1000)
-                Omega = []
-                for i in range(len(beta)):
-                    Omega.append(Omega_GW(f, fref, snr, Tobs, beta[i], Omega_eff_l))     
-                return beta, np.array(Omega)
-            
-            pls_l = np.zeros((len(Nl), len(f)))
-            for i in range(len(Nl[:,0])):
-                beta, Omega = all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, Nl[i,:])
-                for j in range(len(f)):
-                    pls_l[i, j] = np.max(Omega[:,j])
+    #         pls_l = np.zeros((len(Nl), len(f)))
+    #         for i in range(len(Nl[:,0])):
+    #             beta, Omega = all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, Nl[i,:])
+    #             for j in range(len(f)):
+    #                 pls_l[i, j] = np.max(Omega[:,j])
 
             
-            return np.sum(1/(pls_l)**2, axis=0)**(-0.5)
+    #         return np.sum(1/(pls_l)**2, axis=0)**(-0.5)
 
-        else:
+
+    #     elif l % 2 == 0 and l != 0:
+
+    #         Rl_AA = AngularResponse.R_ell_AET(l, 'AA', pol, psi, f)
+    #         Rl_EE = Rl_AA
+    #         Rl_TT =  AngularResponse.R_ell_AET(l, 'TT', pol, psi, f)
+    #         Rl_AE =  AngularResponse.R_ell_AET(l, 'AE', pol, psi, f)
+    #         Rl_AT =  AngularResponse.R_ell_AET(l, 'AT', pol, psi, f)
+    #         Rl_ET = Rl_AT
+
+    #         psd_A = det.LISA_noise_AET(f, 'A')
+    #         psd_E = det.LISA_noise_AET(f, 'E')
+    #         psd_T = det.LISA_noise_AET(f, 'T')
+
+    #         Nl_AA = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_A * psd_A) / Rl_AA
+    #         Nl_EE = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_E * psd_E) / Rl_EE
+    #         Nl_TT = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_T * psd_T) / Rl_TT
+    #         Nl_AE = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_A * psd_E) / Rl_AE
+    #         Nl_AT = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_A * psd_T) / Rl_AT
+    #         Nl_ET = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_E * psd_T) / Rl_ET
+
+    #         Nl = np.array([Nl_AA, Nl_EE, Nl_TT, Nl_AE, Nl_AT, Nl_ET])
+
+
+    #         def Omega_beta(f, fref, snr, Tobs, beta, Omega_eff_l):
+    #             Tobs = Tobs * 365 * 24 * 3600
+    #             integrand = (((f/fref)**(beta)) / (Omega_eff_l))**2 * Cl
+    #             integral = np.trapz(integrand, f)
+    #             return  snr /np.sqrt(2*Tobs)/np.sqrt(integral)
             
-            Rl_AE =  AngularResponse.R_ell_AET(l, 'AE', pol, psi, f)
-            Rl_AT =  AngularResponse.R_ell_AET(l, 'AT', pol, psi, f)
-            Rl_ET = Rl_AT
-
-            psd_A = det.LISA_noise_AET(f, 'A')
-            psd_E = det.LISA_noise_AET(f, 'E')
-            psd_T = det.LISA_noise_AET(f, 'T')
-
-            Nl_AE = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_A * psd_E) / Rl_AE
-            Nl_AT = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_A * psd_T) / Rl_AT
-            Nl_ET = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_E * psd_T) / Rl_ET
-
-            Nl = np.array([Nl_AE, Nl_AT, Nl_ET])
-
-
-            def Omega_beta(f, fref, snr, Tobs, beta, Omega_eff_l):
-                Tobs = Tobs * 365 * 24 * 3600
-                integrand = (((f/fref)**(beta)) / (Omega_eff_l))**2 * Cl
-                integral = np.trapz(integrand, f)
-                return  snr /np.sqrt(2*Tobs)/np.sqrt(integral)
+    #         def Omega_GW(f, fref, snr, Tobs, beta, Omega_eff_l):
+    #             return Omega_beta(f, fref, snr, Tobs, beta, Omega_eff_l) * ((f/fref)**(beta))
             
-            def Omega_GW(f, fref, snr, Tobs, beta, Omega_eff_l):
-                return Omega_beta(f, fref, snr, Tobs, beta, Omega_eff_l) * ((f/fref)**(beta))
+    #         def all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, Omega_eff_l):
+    #             beta = np.linspace(beta_min, beta_max, 1000)
+    #             Omega = []
+    #             for i in range(len(beta)):
+    #                 Omega.append(Omega_GW(f, fref, snr, Tobs, beta[i], Omega_eff_l))     
+    #             return beta, np.array(Omega)
             
-            def all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, Omega_eff_l):
-                beta = np.linspace(beta_min, beta_max, 1000)
-                Omega = []
-                for i in range(len(beta)):
-                    Omega.append(Omega_GW(f, fref, snr, Tobs, beta[i], Omega_eff_l))     
-                return beta, np.array(Omega)
-            
-            pls_l = np.zeros((len(Nl), len(f)))
-            for i in range(len(Nl[:,0])):
-                beta, Omega = all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, Nl[i,:])
-                for j in range(len(f)):
-                    pls_l[i, j] = np.max(Omega[:,j])
+    #         pls_l = np.zeros((len(Nl), len(f)))
+    #         for i in range(len(Nl[:,0])):
+    #             beta, Omega = all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, Nl[i,:])
+    #             for j in range(len(f)):
+    #                 pls_l[i, j] = np.max(Omega[:,j])
 
             
-            return np.sum(1/(pls_l)**2, axis=0)**(-0.5)
+    #         return np.sum(1/(pls_l)**2, axis=0)**(-0.5)
+
+    #     else:
+            
+    #         Rl_AE =  AngularResponse.R_ell_AET(l, 'AE', pol, psi, f)
+    #         Rl_AT =  AngularResponse.R_ell_AET(l, 'AT', pol, psi, f)
+    #         Rl_ET = Rl_AT
+
+    #         psd_A = det.LISA_noise_AET(f, 'A')
+    #         psd_E = det.LISA_noise_AET(f, 'E')
+    #         psd_T = det.LISA_noise_AET(f, 'T')
+
+    #         Nl_AE = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_A * psd_E) / Rl_AE
+    #         Nl_AT = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_A * psd_T) / Rl_AT
+    #         Nl_ET = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_E * psd_T) / Rl_ET
+
+    #         Nl = np.array([Nl_AE, Nl_AT, Nl_ET])
+
+
+    #         def Omega_beta(f, fref, snr, Tobs, beta, Omega_eff_l):
+    #             Tobs = Tobs * 365 * 24 * 3600
+    #             integrand = (((f/fref)**(beta)) / (Omega_eff_l))**2 * Cl
+    #             integral = np.trapz(integrand, f)
+    #             return  snr /np.sqrt(2*Tobs)/np.sqrt(integral)
+            
+    #         def Omega_GW(f, fref, snr, Tobs, beta, Omega_eff_l):
+    #             return Omega_beta(f, fref, snr, Tobs, beta, Omega_eff_l) * ((f/fref)**(beta))
+            
+    #         def all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, Omega_eff_l):
+    #             beta = np.linspace(beta_min, beta_max, 1000)
+    #             Omega = []
+    #             for i in range(len(beta)):
+    #                 Omega.append(Omega_GW(f, fref, snr, Tobs, beta[i], Omega_eff_l))     
+    #             return beta, np.array(Omega)
+            
+    #         pls_l = np.zeros((len(Nl), len(f)))
+    #         for i in range(len(Nl[:,0])):
+    #             beta, Omega = all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, Nl[i,:])
+    #             for j in range(len(f)):
+    #                 pls_l[i, j] = np.max(Omega[:,j])
+
+            
+    #         return np.sum(1/(pls_l)**2, axis=0)**(-0.5)
 
 
 

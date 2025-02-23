@@ -102,8 +102,8 @@ class Response:
         y_values = np.linspace(0, 2*pi, 100)
         X, Y = np.meshgrid(x_values,y_values)  
         f_values = Response.R_integrand(X, Y, psi, c1, xA1, xB1, l1, c2, xA2, xB2, f, l2, pol) # gamma values
-        gamma_x = np.trapz(f_values, x_values, axis=1)
-        gamma = np.trapz(gamma_x, y_values)
+        gamma_x = np.trapezoid(f_values, x_values, axis=1)
+        gamma = np.trapezoid(gamma_x, y_values)
         return np.real(gamma) 
     
 

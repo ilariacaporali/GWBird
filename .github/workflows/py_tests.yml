@@ -1,0 +1,89 @@
+name: Python Tests and Update README with Badge on Top
+
+permissions:
+  contents: write
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest
+          pip install .
+
+      - name: Run tests
+        run: pytest tests/
+
+  update-readme:
+    needs: test
+    runs-on: ubuntu-latest
+    if: always()  # Run regardless of test outcome
+    steps:
+      - name: Checkout repository with push permissions
+        uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+  
+      - name: Set test result environment variable
+        run: echo "TEST_RESULT=${{ needs.test.result }}" >> $GITHUB_ENV
+  
+      - name: Update README with test badge based on test results
+        run: |
+          # Define the test badge as a variable.
+          BADGE="![Test Status](https://img.shields.io/badge/Tests-Passed-brightgreen)"
+          
+          if [ "$TEST_RESULT" = "success" ]; then
+            echo "Tests passed. Ensuring badge is present."
+            # Check if the badge is already present.
+            if grep -Fq "$BADGE" README.md; then
+              echo "Badge already present, no update needed."
+            else
+              # Prepend the badge and a blank line to the README.
+              { echo "$BADGE"; echo ""; cat README.md; } > README.new.md
+              mv README.new.md README.md
+            fi
+          else
+            echo "Tests failed. Removing badge if present."
+            # Check if the badge is in the README.
+            if grep -Fq "$BADGE" README.md; then
+              # Remove any line containing the badge.
+              sed -i "/$(echo "$BADGE" | sed 's/\//\\\//g')/d" README.md
+            else
+              echo "Badge not found, nothing to remove."
+            fi
+          fi
+
+      - name: Commit and push updated README if modified
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add README.md
+          # Only commit if there are staged changes.
+          if ! git diff-index --quiet HEAD --; then
+            git commit -m "Update README based on test result [skip ci]"
+            git push
+          else
+            echo "No changes to commit."
+          fi
+
+      
+

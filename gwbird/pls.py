@@ -68,7 +68,7 @@ def PLS(det1, det2, f, fref, pol, snr, Tobs, psi, Stokes_parameter=False, shift_
         Tobs = Tobs * 365 * 24 * 3600
         Omega_eff_num = Omega_eff(f, orf, Ni, Nj)
         integrand = (((f / fref) ** beta) / Omega_eff_num) ** 2
-        integral = np.trapz(integrand, f)
+        integral = np.trapezoid(integrand, f)
         return snr / np.sqrt(2 * Tobs) / np.sqrt(integral)
 
     def Omega_GW(f, fref, snr, Tobs, beta, orf, Ni, Nj):
@@ -195,7 +195,7 @@ def PLS_2pol(det1, det2, det3, f, fref, pol, snr, Tobs, beta_min, beta_max, psi,
         Tobs = Tobs * 365 * 24 * 3600
         Omega_eff_num = Omega_eff(f, fref, snr, Tobs, orf_12_t, orf_13_x, orf_13_t, orf_12_x, Ni, Nj, Nk)
         integrand = (((f/fref)**(beta)) / (Omega_eff_num))**2
-        integral = np.trapz(integrand, f)
+        integral = np.trapezoid(integrand, f)
         return  snr /np.sqrt(2*Tobs)/np.sqrt(integral)
     
     def Omega_GW(f, fref, snr, Tobs, beta, orf_12_t, orf_13_x, orf_13_t, orf_12_x, Ni, Nj, Nk):
@@ -307,7 +307,7 @@ def PLS_3pol(det1, det2, det3, f, fref, pol, snr, Tobs, beta_min, beta_max, psi,
         Tobs = Tobs * 365 * 24 * 3600
         Omega_eff_num = Omega_eff(f, fref, snr, Tobs, orfIJK, a_1, a_2, a_3, Ni, Nj, Nk)
         integrand = (((f/fref)**(beta)) / (Omega_eff_num))**2
-        integral = np.trapz(integrand, f)
+        integral = np.trapezoid(integrand, f)
         return  snr /np.sqrt(2*Tobs)/np.sqrt(integral)
     
     def Omega_GW(f, fref, snr, Tobs, beta, orfIJK, a_1, a_2, a_3, Ni, Nj, Nk):
