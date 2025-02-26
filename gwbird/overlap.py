@@ -12,7 +12,7 @@ from gwbird.skymap import AngularPatternFunction
 
 class Response:
 
-    def R_integrand(x, y, psi, c1, xA1, xB1, l1, c2, xA2, xB2, f, l2, pol):
+    def R_integrand(x, y, psi, c1, xA1, xB1, l1, c2, xA2, xB2, l2, f, pol):
         
         '''
         Integrand of the overlap reduction function
@@ -28,7 +28,6 @@ class Response:
         xA2: unit vector pointing towards the second detector first arm (array float)
         xB2: unit vector pointing towards the second detector second arm (array float)
         l2: length of the arm of the second detector (float
-        c: speed of light (float)
         f: frequency array (array float)
         pol: polarization mode (string)
 
@@ -41,19 +40,19 @@ class Response:
 
         f = f.reshape(len(f), 1, 1)
 
-        if (pol == 't'):
+        if (pol == 't'): # https://arxiv.org/pdf/1310.5300
             return (5/(8*pi))*\
                 ( F1[0]* np.conj( F2[0]) \
                 + F1[1] *np.conj(F2[1])) \
                 *sin(x)
         
-        elif (pol == 'v'):
+        elif (pol == 'v'): # https://arxiv.org/pdf/2105.13197
             return (5/(8*pi))*\
                 ( F1[2]* np.conj( F2[2]) \
                 + F1[3] *np.conj(F2[3])) \
                 *sin(x)
         
-        elif (pol == 's'):
+        elif (pol == 's'): # https://arxiv.org/pdf/2105.13197
             return (15/(4*pi))*\
                 ( F1[4]* np.conj( F2[4]) ) \
                 * sin(x)
@@ -92,7 +91,6 @@ class Response:
         l2: length of the arm of the second detector (float)
         psi: polarization angle (float)
         f: frequency array (array float)
-        L: length of the arm (float)
         pol: polarization mode (string)
 
         return: overlap reduction function
@@ -101,14 +99,14 @@ class Response:
         x_values = np.linspace(0, pi, 100)
         y_values = np.linspace(0, 2*pi, 100)
         X, Y = np.meshgrid(x_values,y_values)  
-        f_values = Response.R_integrand(X, Y, psi, c1, xA1, xB1, l1, c2, xA2, xB2, f, l2, pol) # gamma values
+        f_values = Response.R_integrand(X, Y, psi, c1, xA1, xB1, l1, c2, xA2, xB2, l2, f, pol) # gamma values
         gamma_x = np.trapezoid(f_values, x_values, axis=1)
         gamma = np.trapezoid(gamma_x, y_values)
         return np.real(gamma) 
     
 
 
-    def overlap(det1, det2, f, psi, pol, shift_angle=False):
+    def overlap(det1, det2, f, psi, pol, shift_angle=None):
         """
         Calculate the overlap response between two detectors.
 
@@ -132,11 +130,10 @@ class Response:
 
         - f: array_like (Frequency in Hz)
         - psi: float (Polarization angle in radians)
-        - pol: str (Polarization of the signal, 't' for tensor, 'v' for vector, 's' for scalar)
+        - pol: str (Polarization of the signal, 't' for tensor, 'v' for vector, 's' for scalar, 'I' for intensity, 'V' for circular)
 
         Optional parameters:
-        - shift_angle: bool or float (Shift the angle of the response if considering ET 2L in radians)
-        - Stokes_parameter: str or bool, optional. Can be False, 'I', or 'V'. Only valid if pol = 't'.
+        - shift_angle: float (Shift the angle of the response if considering ET 2L in radians)
         """
         def get_detector_params(det):
             if isinstance(det, str):
