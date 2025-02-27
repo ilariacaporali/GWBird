@@ -16,6 +16,9 @@ def test_pls():
     psi=0
     sens_LIGO = pls.PLS('LIGO H', 'LIGO L', f, fref, 't', snr, Tobs, psi)
 
+def test_overlap_PTA():
+    f = np.logspace(-9, -7, 100)
+    gamma_NANOGrav = Response.overlap_NANOGrav(f)
 
 if __name__ == "__main__":
     pytest.main([__file__])

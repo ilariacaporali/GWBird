@@ -3,9 +3,19 @@ from numpy import pi, sin, cos, sqrt
 from scipy.spatial.transform import Rotation as R
 from gwbird.utils import REarth
 from gwbird.psd import psd_dir
+from gwbird.NANOGrav import NANOGrav_dir
+from gwbird.EPTA import EPTA_dir
+from pint.models import get_model
+import glob, os #glob2
+from astropy import units as u
+from astropy.coordinates import SkyCoord
+
 
 
 #***************************************************************************************************************
+#===============================================================
+#                      Detectors
+#===============================================================
 
 
 
@@ -211,7 +221,7 @@ def available_detectors():
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 #===============================================================
-#                      NOISE CURVES
+#                      NOISE CURVES (for detectors)
 #===============================================================
 
 
@@ -281,3 +291,77 @@ def LISA_noise_AET(f, channel):
             return NT(f)
         else:
             raise ValueError('Unknown channel')
+        
+#***************************************************************************************************************
+#===============================================================
+#                      Pulsar Timing Arrays
+#===============================================================
+
+def get_NANOGrav_pulsars(): # https://zenodo.org/records/14773896
+
+    '''
+    Function to get the pulsar data from the PINT models
+
+    '''
+
+    pfiles = glob.glob(NANOGrav_dir+ '/'+'*.par')
+    pfiles = [pf for pf in pfiles if not 'gbt' in pf and not 'ao' in pf]
+    pnames = [pf[4:pf.index('_PINT')] for pf in pfiles]
+
+    RA = {}   # Ascensione Retta (Right Ascension)
+    DEC = {}  # Declination
+    DIST = {} # Distanza (in parsec)
+
+    for pf in pfiles:
+        # Carica il modello PINT
+        m = get_model(pf)
+
+        # Estrai le coordinate ICRS (RA e DEC)
+        c = m.components['AstrometryEcliptic'].coords_as_ICRS()
+        RA[m.PSR.value] = c.ra.deg  # Convertito in gradi
+        DEC[m.PSR.value] = c.dec.deg
+
+        # Estrai la distanza (basata sulla parallasse, se disponibile)
+        if hasattr(m, 'PX') and m.PX.value > 0:  
+            DIST[m.PSR.value] = 1000 / m.PX.value  # Converti la parallasse in parsec
+        else:
+            DIST[m.PSR.value] = None  # Se la parallasse non è disponibile
+
+    # converti da parsec a metri
+    for psr in DIST.keys():
+        if DIST[psr] is not None:
+            DIST[psr] *= 3.086e16
+
+    # converti da rad dec a  theta phi 
+
+    theta_pulsar = np.deg2rad(90.0 - np.array(list(DEC.values())))
+    phi_pulsar = np.deg2rad(list(RA.values()))
+
+    # Calcola le coordinate cartesiane
+
+    # Converte i dizionari in array NumPy
+    valid_indices = [psr for psr in DIST if DIST[psr] is not None]  # Escludi None
+    DIST_array = np.array([DIST[psr] for psr in valid_indices])
+    theta_pulsar = np.deg2rad(90.0 - np.array([DEC[psr] for psr in valid_indices]))
+    phi_pulsar = np.deg2rad([RA[psr] for psr in valid_indices])
+
+    # Calcola le coordinate cartesiane
+    x_pulsar = np.sin(theta_pulsar) * np.cos(phi_pulsar)
+    y_pulsar = np.sin(theta_pulsar) * np.sin(phi_pulsar)
+    z_pulsar = np.cos(theta_pulsar)
+    pulsar_xyz = np.array([x_pulsar, y_pulsar, z_pulsar]).T
+
+    N_pulsar = len(valid_indices)
+
+    return N_pulsar, pulsar_xyz, DIST_array
+
+
+def get_EPTA_pulsars():
+    name, phi, theta, ntoas, Tspan, wn, log10_A_red, g_red, log10_A_dm, g_dm, log10_A_sv, g_sv, dt = np.genfromtxt(EPTA_dir+ '/'+'epta.txt', unpack=True, skip_header=True, delimiter=None)
+
+    x_pulsar = np.sin(theta) * np.cos(phi)
+    y_pulsar = np.sin(theta) * np.sin(phi)
+    z_pulsar = np.cos(theta)
+    pulsar_xyz = np.array([x_pulsar, y_pulsar, z_pulsar]).T
+
+    return pulsar_xyz, wn, dt

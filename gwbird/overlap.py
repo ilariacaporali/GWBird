@@ -206,10 +206,50 @@ class Response:
         
         # General case    
         return np.array(Response.R_func(xA1, xB1, c1, l1, xA2, xB2, c2, l2, psi, f, pol))
-
-     
-
     
+
+    def overlap_NANOGrav(f):
+
+        '''
+
+        Compute the overlap reduction function for a set of pulsars
+
+        parameters:
+        f: frequency array
+
+        return:
+        overlap: overlap reduction function for a set of pulsars
+
+        '''
+
+
+        def gamma_integrand(theta, phi, psi, p1, p2):
+            Fp1 = AngularPatternFunction.F_pulsar(theta, phi, psi, p1)
+            Fp2 = AngularPatternFunction.F_pulsar(theta, phi, psi, p2)
+            gamma_ij = 3/ 2 * (Fp1[0] * Fp2[0] + Fp1[1] * Fp2[1])
+            return gamma_ij 
+
+        def gamma( p1, p2, f):
+            theta = np.linspace(0, np.pi, 100)
+            phi = np.linspace(0, 2*np.pi, 100)
+            Theta, Phi = np.meshgrid(theta, phi)
+            integrand = gamma_integrand(Theta, Phi, 0, p1, p2)
+            integral = np.trapezoid(np.trapezoid(np.sin(Theta) * integrand, theta), phi)
+            return np.abs(integral)/4* np.pi
+
+
+        N_pulsar, pulsar_xyz, DIST_array = detectors.get_NANOGrav_pulsars()
+        
+        overlap = np.zeros(len(f))
+
+        for i in range(N_pulsar):
+            for j in range(i +1, N_pulsar):
+                overlap += gamma( pulsar_xyz[i], pulsar_xyz[j], f)
+                
+        return overlap
+        
+
+        
 
             
 
