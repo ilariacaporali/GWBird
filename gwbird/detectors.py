@@ -15,6 +15,13 @@ class Rotations:
     def rot_axis(vector, angle, axis):
         """
         Rotate a vector around a given axis by a certain angle
+
+        Parameters:
+        vector: vector to rotate
+        angle: angle of rotation (radians)
+        axis: axis of rotation (unitary vector)
+
+        return: rotated vector
         """
         axis = axis / np.linalg.norm(axis)
         cos_theta = cos(angle)
@@ -24,12 +31,24 @@ class Rotations:
     def rot_angle(vec1, vec2):
         """
         Calculate the angle between two vectors
+
+        Parameters:
+        vec1: first vector
+        vec2: second vector
+
+        return: angle between the two vectors
         """
         return np.arccos(np.clip(np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2)), -1.0, 1.0))
 
     def find_perp(vec1, vec2):
         """
         Find a vector perpendicular to two given vectors
+
+        Parameters:
+        vec1: first vector
+        vec2: second vector
+
+        return: perpendicular vector
         """
         return np.cross(vec1, vec2)
 

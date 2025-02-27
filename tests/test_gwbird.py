@@ -16,5 +16,6 @@ def test_pls():
     psi=0
     sens_LIGO = pls.PLS('LIGO H', 'LIGO L', f, fref, 't', snr, Tobs, psi)
 
+
 if __name__ == "__main__":
     pytest.main([__file__])
