@@ -3,7 +3,7 @@ from numpy import cos, sin, pi, sqrt
 from mpmath import mp
 from gwbird import detectors as det
 from gwbird.skymap import AngularPatternFunction
-from scipy.special import sph_harm
+from scipy.special import sph_harm, sph_harm_y
 from gwbird.utils import c, H0, h
 
 
@@ -33,6 +33,10 @@ class AngularResponse:
             return (5 / (8 * pi)) * (F1[2] * np.conj(F2[2]) + F1[3] * np.conj(F2[3])) * sph_harm_val * sqrt(4 * pi) * sin(x)
         elif pol == 's':
             return (15 / (4 * pi)) * (F1[4] * np.conj(F2[4])) * sph_harm_val * sqrt(4 * pi) * sin(x)
+        elif pol == 'I':
+            return (5 / (8 * pi)) * (F1[0] * np.conj(F2[0]) + F1[1] * np.conj(F2[1])) * sph_harm_val * sqrt(4 * pi) * sin(x)
+        elif pol == 'V':
+            return 1j*(5/(8*pi))*( F1[0]* np.conj( F2[1]) - F1[1] *np.conj(F2[0])) * sph_harm_val * sqrt(4 * pi) * sin(x)
         else:
             raise ValueError('Unknown polarization')
 
@@ -175,6 +179,99 @@ class AngularResponse:
             else:
                 raise ValueError('Unknown combination of detectors')
 
+    def R_ell_pairwise(ell, pi, pj, f):
+
+        '''
+        Compute the angular response for a pair of pulsars
+
+        parameters:
+        ell: multipole
+        pi: pulsar 1
+        pj: pulsar 2
+        f: frequency array
+
+        return:
+        angular response: angular response for a pair of pulsars
+
+
+        '''
+        
+        def gamma_integrand_ellm(ell, m, theta, phi, psi, p1, p2,):
+            Fp1 = AngularPatternFunction.F_pulsar(theta, phi, psi, p1)
+            Fp2 = AngularPatternFunction.F_pulsar(theta, phi, psi, p2)
+            gamma_ij = 3/ 2 * (Fp1[0] * Fp2[0] + Fp1[1] * Fp2[1])
+            return gamma_ij *  sph_harm_y(ell, m, theta, phi)* np.sqrt(4* np.pi)/ (4*np.pi)
+
+        def gamma_ellm(ell, m, p1, p2, f):
+            theta = np.linspace(0, np.pi, 100)
+            phi = np.linspace(0, 2*np.pi, 100)
+            Theta, Phi = np.meshgrid(theta, phi)
+            integrand = gamma_integrand_ellm(ell, m, Theta, Phi, 0, p1, p2)
+            integral = np.trapezoid(np.trapezoid(np.sin(Theta) * integrand, theta), phi)
+            return np.abs(integral)
+        
+        def gamma_ell(ell, p1, p2, f):
+            gamma_l = 0
+            for m in range(-ell, ell+1):
+                gamma_l += np.abs(gamma_ellm(ell, m, p1, p2, f))**2
+            return np.sqrt(gamma_l) 
+
+        return gamma_ell(ell, pi, pj, f)   
+    
+
+    def R_ell_EPTA(ell, f):
+
+        '''
+
+        Compute the overlap reduction function for a set of pulsars
+
+        parameters:
+        ell: multipole
+        f: frequency array
+
+        return:
+        angular respone: angular response for a set of pulsars
+
+        '''
+
+        pulsar_xyz, _, _ = det.get_EPTA_pulsars()
+        N_pulsar = len(pulsar_xyz)
+        
+        angular_response = np.zeros(len(f))
+
+        for i in range(N_pulsar):
+            for j in range(i +1, N_pulsar):
+                angular_response += AngularResponse.R_ell_pairwise(ell, pulsar_xyz[i], pulsar_xyz[j], f)
+                
+        return angular_response 
+
+    
+            
+    def R_ell_NANOGrav(ell, f):
+
+        '''
+
+        Compute the overlap reduction function for a set of pulsars
+
+        parameters:
+        ell: multipole
+        f: frequency array
+
+        return:
+        angular respone: angular response for a set of pulsars
+
+        '''
+
+        N_pulsar, pulsar_xyz, DIST_array = det.get_NANOGrav_pulsars()
+        
+        angular_response = np.zeros(len(f))
+
+        for i in range(N_pulsar):
+            for j in range(i +1, N_pulsar):
+                angular_response += AngularResponse.R_ell_pairwise(ell, pulsar_xyz[i], pulsar_xyz[j], f)
+                
+        return angular_response 
+
 
 
 
@@ -275,314 +372,134 @@ class Sensitivity_ell:
             pls_l[i, :] = np.max(Omega, axis=0)
 
         return np.sum(1 / (pls_l) ** 2, axis=0) ** (-0.5)
-
-
-
-    # def PLS_ell(det1, det2, ell, f, pol, psi, fref, snr, Tobs, Cl, shift_angle=None, fI=None, PnI=None, fJ=None, PnJ=None): # PLS_ell
-
-    #     '''
-    #     Parameters:
-
-    #     - det1, det2: str or list of str
-    #         The name of the detector(s) to consider.
-    #         The names must be in the list of detectors available in the response module.
-    #         The list of available detectors can be obtained by calling the function detectors.available_detectors().
-    #         The names of the detectors are case sensitive.
-    #         If you want to provide a custom detector, you can provide the following information in a list:
-
-    #         H = [c, xA, xB, l, name]
-
-    #         - c: array_like of length 3 (Position of the detector in the Earth-centered frame in meters)
-    #         - xA: array_like of length 3 (Unit vector pointing towards the detector in the Earth-centered frame)
-    #         - xB: array_like of length 3 (Unit vector pointing towards the detector in the Earth-centered frame)
-    #         - l: float (Length of the arm in meters)
-    #         - name: str (Name of the detector)
-
-    #     - Rl: array_like (Angular response for the multipole ell)
-    #     - f = array_like (Frequency in Hz)
-    #     - fref = float (Reference frequency in Hz)
-    #     - snr = float (Signal-to-noise ratio threshold)
-    #     - Tobs = float (Observation time in years)
-    #     - beta_min = float (Minimum tilt to consider)
-    #     - beta_max = float (Maximum tilt to consider)
-    #     - Cl = float (Cl for the multipole ell)
-
-    #     Optional parameters:
-    #     - fI = bool or array_like (Frequency in Hz for the detector I)
-    #     - PnI = bool or array_like (Power spectral density for the detector I)
-    #     - fJ = bool or array_like (Frequency in Hz for the detector J)
-    #     - PnJ = bool or array_like (Power spectral density for the detector J)
-
-    #     '''
-
-    #     def Omega_eff_ell(det1, det2, Rl, f, fI=None, PnI=None, fJ=None, PnJ=None): # N_ell
-    #         '''
-    #         det1, det2: detectors (string)
-    #         Rl: anisotropic response function (array float)
-    #         f: frequency array (array float)
-    #         fI, PnI, fJ, PnJ: frequency and noise power spectral density arrays
-    #         '''
-        
-    #         if fI is not None and PnI is not None and fJ is not None and PnJ is not None:
-    #             Pni = np.interp(f, fI, PnI)
-    #             Pnj = np.interp(f, fJ, PnJ)
-    #         else:
-    #             fi, PnI = det.detector_Pn(det1)
-    #             fj, PnJ = det.detector_Pn(det2)
-    #             Pni = np.interp(f, fi, PnI)
-    #             Pnj = np.interp(f, fj, PnJ)
-            
-    #         Nl = 10 * np.pi**2 * np.sqrt(4*np.pi)  / (3* (H0/h)**2) * f**3 * np.sqrt(Pni * Pnj) / Rl
-            
-    #         return Nl
-        
-    #     def Omega_beta(f, fref, snr, Tobs, beta, Omega_eff_l):
-    #         Tobs = Tobs * 365 * 24 * 3600
-    #         integrand = (((f/fref)**(beta)) / (Omega_eff_l))**2 * Cl
-    #         integral = np.trapz(integrand, f)
-    #         return  snr /np.sqrt(2*Tobs)/np.sqrt(integral)
-        
-    #     def Omega_GW(f, fref, snr, Tobs, beta, Omega_eff_l):
-    #         return Omega_beta(f, fref, snr, Tobs, beta, Omega_eff_l) * ((f/fref)**(beta))
-        
-    #     def all_Omega_GW(f, fref, snr, Tobs,  Omega_eff_l):
-    #         beta = np.linspace(-40, 40, 1000)
-    #         Omega = []
-    #         for i in range(len(beta)):
-    #             Omega.append(Omega_GW(f, fref, snr, Tobs, beta[i], Omega_eff_l))     
-    #         return beta, np.array(Omega)
-
-    #     if det1 == 'LISA' and det2 == 'Network':
-    #         if ell == 0:
-    #             R_AA = AngularResponse.R_ell(ell, 'LISA A', 'LISA A', f, pol, psi, shift_angle)
-    #             R_TT = AngularResponse.R_ell(ell, 'LISA T', 'LISA T', f, pol, psi, shift_angle)
-
-    #             psd_A = det.LISA_noise_AET(f, 'A')
-    #             psd_E = det.LISA_noise_AET(f, 'E')
-    #             psd_T = det.LISA_noise_AET(f, 'T')
-
-    #             Omega_eff_AA = Omega_eff_ell('LISA A', 'LISA A', R_AA, f, f, psd_A, f, psd_A)/np.sqrt(4*np.pi)
-    #             Omega_eff_EE = Omega_eff_ell('LISA E', 'LISA E', R_AA, f, f, psd_E, f, psd_E)/np.sqrt(4*np.pi)
-    #             Omega_eff_TT = Omega_eff_ell('LISA T', 'LISA T', R_TT, f, f, psd_T, f, psd_T)/np.sqrt(4*np.pi)
-
-    #             Omega_eff = np.array([Omega_eff_AA, Omega_eff_EE, Omega_eff_TT])
-
-    #         elif ell % 2 == 0 and ell != 0:
-    #             R_AA = AngularResponse.R_ell(ell, 'LISA A', 'LISA A', f, pol, psi, shift_angle)
-    #             R_EE = R_AA
-    #             R_TT = AngularResponse.R_ell(ell, 'LISA T', 'LISA T', f, pol, psi, shift_angle)
-    #             R_AE = AngularResponse.R_ell(ell, 'LISA A', 'LISA E', f, pol, psi, shift_angle)
-    #             R_AT = AngularResponse.R_ell(ell, 'LISA A', 'LISA T', f, pol, psi, shift_angle)
-    #             R_ET = R_AT
-
-    #             psd_A = det.LISA_noise_AET(f, 'A')
-    #             psd_E = det.LISA_noise_AET(f, 'E')
-    #             psd_T = det.LISA_noise_AET(f, 'T')
-
-    #             Omega_eff_AA = Omega_eff_ell('LISA A', 'LISA A', R_AA, f, f, psd_A, f, psd_A)/np.sqrt(4*np.pi)
-    #             Omega_eff_EE = Omega_eff_ell('LISA E', 'LISA E', R_EE, f, f, psd_E, f, psd_E)/np.sqrt(4*np.pi)
-    #             Omega_eff_TT = Omega_eff_ell('LISA T', 'LISA T', R_TT, f, f, psd_T, f, psd_T)/np.sqrt(4*np.pi)
-    #             Omega_eff_AE = Omega_eff_ell('LISA A', 'LISA E', R_AE, f, f, psd_A, f, psd_E)/np.sqrt(4*np.pi)
-    #             Omega_eff_AT = Omega_eff_ell('LISA A', 'LISA T', R_AT, f, f, psd_A, f, psd_T)/np.sqrt(4*np.pi)
-    #             Omega_eff_ET = Omega_eff_ell('LISA E', 'LISA T', R_ET, f, f, psd_E, f, psd_T)/np.sqrt(4*np.pi)
-
-    #             Omega_eff = np.array([Omega_eff_AA, Omega_eff_EE, Omega_eff_TT, Omega_eff_AE, Omega_eff_AT, Omega_eff_ET])
-
-    #         elif ell % 2 != 0 and ell != 0:
-    #             R_AE = AngularResponse.R_ell(ell, 'LISA A', 'LISA E', f, pol, psi, shift_angle)
-    #             R_AT = AngularResponse.R_ell(ell, 'LISA A', 'LISA T', f, pol, psi, shift_angle)
-    #             R_ET = R_AT
-
-    #             psd_A = det.LISA_noise_AET(f, 'A')
-    #             psd_E = det.LISA_noise_AET(f, 'E')
-    #             psd_T = det.LISA_noise_AET(f, 'T')
-
-    #             Omega_eff_AE = Omega_eff_ell('LISA A', 'LISA E', R_AE, f, f, psd_A, f, psd_E)/np.sqrt(4*np.pi)
-    #             Omega_eff_AT = Omega_eff_ell('LISA A', 'LISA T', R_AT, f, f, psd_A, f, psd_T)/np.sqrt(4*np.pi)
-    #             Omega_eff_ET = Omega_eff_ell('LISA E', 'LISA T', R_ET, f, f, psd_E, f, psd_T)/np.sqrt(4*np.pi)
-
-    #             Omega_eff = np.array([Omega_eff_AE, Omega_eff_AT, Omega_eff_ET])
-
-    #         else:
-    #             raise ValueError('Insert a valid multipole')
-            
-    #         pls_l = np.zeros((len(Omega_eff), len(f)))
-    #         for i in range(len(Omega_eff[:,0])):
-    #             beta, Omega = all_Omega_GW(f, fref, snr, Tobs, Omega_eff[i,:])
-    #             for j in range(len(f)):
-    #                 pls_l[i, j] = np.max(Omega[:,j])
-
-    #         return np.sum(1/(pls_l)**2, axis=0)**(-0.5)
-
-
-
-    #     else:
-    #         Rl = AngularResponse.R_ell(ell, det1, det2, f, pol, psi, shift_angle)
-
-    #         Omega_eff_l = Omega_eff_ell(det1, det2, Rl, f, fI, PnI, fJ, PnJ)/np.sqrt(4*np.pi)
-
-    #         beta, Omega = all_Omega_GW(f, fref, snr, Tobs, Omega_eff_l)
-
-    #         pls_l = np.zeros(len(f))
-
-    #         for i in range(len(f)):
-    #             pls_l[i] = np.max(Omega[:,i])
-
-    #         return pls_l
     
 
+    def apls_PTA_EPTA(ell, f, snr, Tobs, Cl):
 
+        '''
+        Compute the power law sensitivity curve for PTA
 
-    # def PLS_l_LISA(f, l, pol, fref, snr, Tobs, beta_min, beta_max, Cl, psi):
+        parameters:
+        ell: multipole, integer
+        f: frequency array
+        snr: signal to noise ratio
+        Tobs: observation time in years
+        Cl (float): Cl parameter for multipole.
 
-    #     '''
-    #     Parameters:
-    #     - f = array_like (Frequency in Hz)
-    #     - Rl: array_like (Angular response for the multipole ell)
-    #     - fref = float (Reference frequency in Hz)
-    #     - snr = float (Signal-to-noise ratio threshold)
-    #     - Tobs = float (Observation time in years)
-    #     - beta_min = float (Minimum tilt to consider)
-    #     - beta_max = float (Maximum tilt to consider)
-    #     - Cl = float (Cl for the multipole ell)
-    #     - psi = float (Polarization angle in radians)
+        return:
+        pls: power law sensitivity curve
+
+        '''
+
+        def PTA_Pn(wn, dt):
+            return 2 * (wn**2) * dt * 1e-12
+
+        def PTA_Sn(f, wn, dt):
+            f = np.asarray(f) # Ensure f is a NumPy array
+            mask = f >= 8e-9 # Create a boolean mask where True indicates elements greater than or equal to 8e-9
+            return np.where(mask, PTA_Pn(wn, dt) * 12 * (np.pi**2) * f**2, 1) # Apply the mask to the result
         
-    #     Return: array float (PLS for the multipole ell)
-    #     '''
-    #     if l == 0:
+        def PTA_Omegaeff_all(ell, f, p, wn, dt):
+            s = 0
+            N = len(p)
+            for i in range(N):
+                for j in range(i+1, N):
+                    s +=  AngularResponse.R_ell_pairwise(ell, p[i], p[j], f)**2 / (PTA_Sn(f, wn[i], dt[i])* PTA_Sn(f, wn[j], dt[j]))
 
-    #         Rl_AA = AngularResponse.R_ell_AET(l, 'AA', pol, psi, f)
-    #         Rl_EE = Rl_AA
-    #         Rl_TT =  AngularResponse.R_ell_AET(l, 'TT', pol, psi, f)
+            return 2 * np.pi * np.pi * f**3 / np.sqrt(s) / (3* ((H0/h)**2))
+        
 
-    #         psd_A = det.LISA_noise_AET(f, 'A')
-    #         psd_E = det.LISA_noise_AET(f, 'E')
-    #         psd_T = det.LISA_noise_AET(f, 'T')
+        def Omega_beta_PTA(ell, f, snr, Tobs, Cl, beta, p, wn, dt):
+            Tobs = Tobs*365*24*3600
+            fref = 1e-8
+            integrand = ((f/fref)**(2*beta))/ (PTA_Omegaeff_all(ell, f, p, wn, dt)**2) * Cl
+            integral = np.trapezoid(integrand, f)
+            return snr / np.sqrt(2*Tobs*integral)
 
-    #         Nl_AA = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_A * psd_A) / Rl_AA
-    #         Nl_EE = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_E * psd_E) / Rl_EE
-    #         Nl_TT = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_T * psd_T) / Rl_TT
+        def Omega_GW_PTA(ell, f,  beta, fref, snr, Tobs, Cl,  p, wn, dt):
+            return Omega_beta_PTA(ell, f, snr, Tobs, Cl, beta, p, wn, dt) * ((f/fref)**(beta))
 
-    #         Nl = np.array([Nl_AA, Nl_EE, Nl_TT])
+        def all_Omega_GW_PTA(ell, f, snr, Tobs, Cl, p, wn, dt):
+            beta = np.linspace(-8, 8, 50)
+            fref = 1e-8
+            Omega = []
+            for i in range(len(beta)):
+                Omega.append(Omega_GW_PTA(ell, f, beta[i], fref, snr, Tobs, Cl, p, wn, dt))     
+            return beta, np.array(Omega)
+        
+        p, wn, dt = det.get_EPTA_pulsars()
+        beta, Omega = all_Omega_GW_PTA(ell, f, snr, Tobs, Cl, p, wn, dt)
+        pls = np.zeros(len(f))
+        for i in range(len(f)):
+            pls[i] = np.max(Omega[:,i])
+        return pls
+    
+    def apls_PTA_NANOGrav(ell, f, snr, Tobs, Cl):
 
+        '''
+        Compute the power law sensitivity curve for PTA
 
-    #         def Omega_beta(f, fref, snr, Tobs, beta, Omega_eff_l):
-    #             Tobs = Tobs * 365 * 24 * 3600
-    #             integrand = (((f/fref)**(beta)) / (Omega_eff_l))**2 * Cl
-    #             integral = np.trapz(integrand, f)
-    #             return  snr /np.sqrt(2*Tobs)/np.sqrt(integral)
-            
-    #         def Omega_GW(f, fref, snr, Tobs, beta, Omega_eff_l):
-    #             return Omega_beta(f, fref, snr, Tobs, beta, Omega_eff_l) * ((f/fref)**(beta))
-            
-    #         def all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, Omega_eff_l):
-    #             beta = np.linspace(beta_min, beta_max, 1000)
-    #             Omega = []
-    #             for i in range(len(beta)):
-    #                 Omega.append(Omega_GW(f, fref, snr, Tobs, beta[i], Omega_eff_l))     
-    #             return beta, np.array(Omega)
-            
-    #         pls_l = np.zeros((len(Nl), len(f)))
-    #         for i in range(len(Nl[:,0])):
-    #             beta, Omega = all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, Nl[i,:])
-    #             for j in range(len(f)):
-    #                 pls_l[i, j] = np.max(Omega[:,j])
+        parameters:
+        ell: multipole, integer
+        f: frequency array
+        snr: signal to noise ratio
+        Tobs: observation time in years
+        Cl (float): Cl parameter for multipole.
 
-            
-    #         return np.sum(1/(pls_l)**2, axis=0)**(-0.5)
+        return:
+        pls: power law sensitivity curve
 
+        '''
 
-    #     elif l % 2 == 0 and l != 0:
+        def PTA_Pn():
+            DT = (365*24*3600)/20 # s
+            s = 100 * 1e-9 #s
+            return 2* (s**2) * DT
 
-    #         Rl_AA = AngularResponse.R_ell_AET(l, 'AA', pol, psi, f)
-    #         Rl_EE = Rl_AA
-    #         Rl_TT =  AngularResponse.R_ell_AET(l, 'TT', pol, psi, f)
-    #         Rl_AE =  AngularResponse.R_ell_AET(l, 'AE', pol, psi, f)
-    #         Rl_AT =  AngularResponse.R_ell_AET(l, 'AT', pol, psi, f)
-    #         Rl_ET = Rl_AT
+        def PTA_Sn(f):
+            f = np.asarray(f) # Ensure f is a NumPy array
+            mask = f >= 8e-9 # Create a boolean mask where True indicates elements greater than or equal to 8e-9
+            return np.where(mask, PTA_Pn() * 12 * (np.pi**2) * f**2, 1) # Apply the mask to the result
+        
+        def PTA_Omegaeff_all(ell, f, p):
+            s = 0
+            N = len(p)
+            for i in range(N):
+                for j in range(i+1, N):
+                    s +=  AngularResponse.R_ell_pairwise(ell, p[i], p[j], f)**2 / (PTA_Sn(f)* PTA_Sn(f))
 
-    #         psd_A = det.LISA_noise_AET(f, 'A')
-    #         psd_E = det.LISA_noise_AET(f, 'E')
-    #         psd_T = det.LISA_noise_AET(f, 'T')
+            return 2 * np.pi * np.pi * f**3 / np.sqrt(s) / (3* ((H0/h)**2))
+        
 
-    #         Nl_AA = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_A * psd_A) / Rl_AA
-    #         Nl_EE = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_E * psd_E) / Rl_EE
-    #         Nl_TT = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_T * psd_T) / Rl_TT
-    #         Nl_AE = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_A * psd_E) / Rl_AE
-    #         Nl_AT = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_A * psd_T) / Rl_AT
-    #         Nl_ET = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_E * psd_T) / Rl_ET
+        def Omega_beta_PTA(ell, f, snr, Tobs, Cl, beta, p):
+            Tobs = Tobs*365*24*3600
+            fref = 1e-8
+            integrand = ((f/fref)**(2*beta))/ (PTA_Omegaeff_all(ell, f, p)**2) * Cl
+            integral = np.trapezoid(integrand, f)
+            return snr / np.sqrt(2*Tobs*integral)
 
-    #         Nl = np.array([Nl_AA, Nl_EE, Nl_TT, Nl_AE, Nl_AT, Nl_ET])
+        def Omega_GW_PTA(ell, f,  beta, fref, snr, Tobs, Cl,  p):
+            return Omega_beta_PTA(ell, f, snr, Tobs, Cl, beta, p) * ((f/fref)**(beta))
 
-
-    #         def Omega_beta(f, fref, snr, Tobs, beta, Omega_eff_l):
-    #             Tobs = Tobs * 365 * 24 * 3600
-    #             integrand = (((f/fref)**(beta)) / (Omega_eff_l))**2 * Cl
-    #             integral = np.trapz(integrand, f)
-    #             return  snr /np.sqrt(2*Tobs)/np.sqrt(integral)
-            
-    #         def Omega_GW(f, fref, snr, Tobs, beta, Omega_eff_l):
-    #             return Omega_beta(f, fref, snr, Tobs, beta, Omega_eff_l) * ((f/fref)**(beta))
-            
-    #         def all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, Omega_eff_l):
-    #             beta = np.linspace(beta_min, beta_max, 1000)
-    #             Omega = []
-    #             for i in range(len(beta)):
-    #                 Omega.append(Omega_GW(f, fref, snr, Tobs, beta[i], Omega_eff_l))     
-    #             return beta, np.array(Omega)
-            
-    #         pls_l = np.zeros((len(Nl), len(f)))
-    #         for i in range(len(Nl[:,0])):
-    #             beta, Omega = all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, Nl[i,:])
-    #             for j in range(len(f)):
-    #                 pls_l[i, j] = np.max(Omega[:,j])
-
-            
-    #         return np.sum(1/(pls_l)**2, axis=0)**(-0.5)
-
-    #     else:
-            
-    #         Rl_AE =  AngularResponse.R_ell_AET(l, 'AE', pol, psi, f)
-    #         Rl_AT =  AngularResponse.R_ell_AET(l, 'AT', pol, psi, f)
-    #         Rl_ET = Rl_AT
-
-    #         psd_A = det.LISA_noise_AET(f, 'A')
-    #         psd_E = det.LISA_noise_AET(f, 'E')
-    #         psd_T = det.LISA_noise_AET(f, 'T')
-
-    #         Nl_AE = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_A * psd_E) / Rl_AE
-    #         Nl_AT = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_A * psd_T) / Rl_AT
-    #         Nl_ET = 4 * np.pi**2  / (3* (H0/h)**2) * f**3 * np.sqrt(psd_E * psd_T) / Rl_ET
-
-    #         Nl = np.array([Nl_AE, Nl_AT, Nl_ET])
+        def all_Omega_GW_PTA(ell, f, snr, Tobs, Cl, p):
+            beta = np.linspace(-8, 8, 50)
+            fref = 1e-8
+            Omega = []
+            for i in range(len(beta)):
+                Omega.append(Omega_GW_PTA(ell, f, beta[i], fref, snr, Tobs, Cl, p))     
+            return beta, np.array(Omega)
+        
+        _, p, _ = det.get_NANOGrav_pulsars()
+        beta, Omega = all_Omega_GW_PTA(ell, f, snr, Tobs, Cl, p)
+        pls = np.zeros(len(f))
+        for i in range(len(f)):
+            pls[i] = np.max(Omega[:,i])
+        return pls
 
 
-    #         def Omega_beta(f, fref, snr, Tobs, beta, Omega_eff_l):
-    #             Tobs = Tobs * 365 * 24 * 3600
-    #             integrand = (((f/fref)**(beta)) / (Omega_eff_l))**2 * Cl
-    #             integral = np.trapz(integrand, f)
-    #             return  snr /np.sqrt(2*Tobs)/np.sqrt(integral)
-            
-    #         def Omega_GW(f, fref, snr, Tobs, beta, Omega_eff_l):
-    #             return Omega_beta(f, fref, snr, Tobs, beta, Omega_eff_l) * ((f/fref)**(beta))
-            
-    #         def all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, Omega_eff_l):
-    #             beta = np.linspace(beta_min, beta_max, 1000)
-    #             Omega = []
-    #             for i in range(len(beta)):
-    #                 Omega.append(Omega_GW(f, fref, snr, Tobs, beta[i], Omega_eff_l))     
-    #             return beta, np.array(Omega)
-            
-    #         pls_l = np.zeros((len(Nl), len(f)))
-    #         for i in range(len(Nl[:,0])):
-    #             beta, Omega = all_Omega_GW(f, fref, snr, Tobs, beta_min, beta_max, Nl[i,:])
-    #             for j in range(len(f)):
-    #                 pls_l[i, j] = np.max(Omega[:,j])
-
-            
-    #         return np.sum(1/(pls_l)**2, axis=0)**(-0.5)
 
 
+  
 
 
 

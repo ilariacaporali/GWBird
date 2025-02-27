@@ -43,7 +43,7 @@ def PLS(det1, det2, f, fref, pol, snr, Tobs, psi, shift_angle=False, fI=None, Pn
         Frequency arrays and corresponding Power Spectral Densities (PSDs) for custom detectors. These are used when no predefined detector networks are chosen.
 
     Returns:
-    - PLS : array
+    - pls: power law sensitivity curve  (h^2 \Omega_{GW}(f))
         The sensitivity of the detector(s) to the GWB signal, evaluated as the Power-Law Sensitivity (PLS). This is a function of the observation time, SNR, and the detectors' noise characteristics.
 
     Description:
@@ -249,7 +249,7 @@ def PLS_2pol(det1, det2, det3, f, fref, pol, snr, Tobs, psi, shift_angle, fI=Non
     
     Returns:
 
-    - PLS : array
+    - pls: power law sensitivity curve  (h^2 \Omega_{GW}(f))
         The sensitivity of the detector network to the GWB signal, evaluated as the Power-Law Sensitivity (PLS) for the vector or scalar contribution.
     
     '''
@@ -407,7 +407,7 @@ def PLS_3pol(det1, det2, det3, f, fref, pol, snr, Tobs, psi, shift_angle, fI=Non
         These are used when no predefined detector networks are chosen.
 
     Returns:
-    - PLS : array
+    - pls: power law sensitivity curve  (h^2 \Omega_{GW}(f))
 
     '''
 
@@ -579,4 +579,124 @@ def PLS_3pol(det1, det2, det3, f, fref, pol, snr, Tobs, psi, shift_angle, fI=Non
 
     return pls
 
+
+def pls_PTA_NANOGrav(f, snr, Tobs):
+
+    '''
+    Compute the power law sensitivity curve for PTA
+
+    parameters:
+    f: frequency array
+    snr: signal to noise ratio
+    Tobs: observation time in years
+
+    return:
+    pls: power law sensitivity curve  (h^2 \Omega_{GW}(f))
+
+    '''
+
+    def PTA_Pn():
+        DT = (365*24*3600)/20 # s
+        s = 100 * 1e-9 #s
+        return 2* (s**2) * DT
+
+    def PTA_Sn(f):
+        f = np.asarray(f) # Ensure f is a NumPy array
+        mask = f >= 8e-9 # Create a boolean mask where True indicates elements greater than or equal to 8e-9
+        return np.where(mask, PTA_Pn() * 12 * (np.pi**2) * f**2, 1) # Apply the mask to the result
+
+    def PTA_Seff(f, overlap):
+        return (overlap)**-0.5 * PTA_Sn(f)
+
+    def PTA_Omegaeff(f, S_eff):
+        return 2 * np.pi * np.pi * f**3 * S_eff / (3* ((H0/h)**2))
+
+    
+    def Omega_beta_PTA(f, snr, Tobs, beta, S_eff):
+        Tobs = Tobs*365*24*3600
+        fref = 1e-8
+        integrand = ((f/fref)**(2*beta))/ (PTA_Omegaeff(f, S_eff)**2)
+        integral = np.trapezoid(integrand, f)
+        return snr / np.sqrt(2*Tobs*integral)
+
+
+    def Omega_GW_PTA(f,  beta, fref, snr, Tobs, S_eff):
+        return Omega_beta_PTA(f, snr, Tobs, beta, S_eff) * ((f/fref)**(beta))
+
+    def all_Omega_GW_PTA(f, snr, Tobs, S_eff):
+        beta = np.linspace(-8, 8, 50)
+        fref = 1e-8
+        Omega = []
+        for i in range(len(beta)):
+            Omega.append(Omega_GW_PTA(f, beta[i], fref, snr, Tobs, S_eff))     
+        return beta, np.array(Omega)
+    
+    overlap =  Response.overlap_NANOGrav(f)
+    S_eff = PTA_Seff(f, overlap)
+    beta, Omega = all_Omega_GW_PTA(f, snr, Tobs, S_eff)
+    pls = np.zeros(len(f))
+    for i in range(len(f)):
+        pls[i] = np.max(Omega[:,i])
+    return pls
+
+def pls_PTA_EPTA(f, snr, Tobs):
+
+    '''
+    Compute the power law sensitivity curve for PTA
+
+    parameters:
+    f: frequency array
+    snr: signal to noise ratio
+    Tobs: observation time in years
+
+    return:
+    pls: power law sensitivity curve  (h^2 \Omega_{GW}(f))
+
+    '''
+
+
+    def PTA_Pn(wn, dt):
+        return 2 * (wn**2) * dt * 1e-12
+
+
+    def PTA_Sn(f, wn, dt):
+        f = np.asarray(f) # Ensure f is a NumPy array
+        mask = f >= 8e-9 # Create a boolean mask where True indicates elements greater than or equal to 8e-9
+        return np.where(mask, PTA_Pn(wn, dt) * 12 * (np.pi**2) * f**2, 1) # Apply the mask to the result
+
+    def PTA_Omegaeff_all(f, p, wn, dt):
+        s = 0
+        N = len(p)
+        for i in range(N):
+            for j in range(i+1, N):
+                s +=  Response.pairwise_overlap(f, p[i], p[j])**2 / (PTA_Sn(f, wn[i], dt[i])* PTA_Sn(f, wn[j], dt[j]))
+
+        return 2 * np.pi * np.pi * f**3 / np.sqrt(s) / (3* ((H0/h)**2))
+    
+
+    def Omega_beta_PTA(f, snr, Tobs, beta, p, wn, dt):
+        Tobs = Tobs*365*24*3600
+        fref = 1e-8
+        integrand = ((f/fref)**(2*beta))/ (PTA_Omegaeff_all(f, p, wn, dt)**2)
+        integral = np.trapezoid(integrand, f)
+        return snr / np.sqrt(2*Tobs*integral)
+
+
+    def Omega_GW_PTA(f,  beta, fref, snr, Tobs,  p, wn, dt):
+        return Omega_beta_PTA(f, snr, Tobs, beta, p, wn, dt) * ((f/fref)**(beta))
+
+    def all_Omega_GW_PTA(f, snr, Tobs, p, wn, dt):
+        beta = np.linspace(-8, 8, 50)
+        fref = 1e-8
+        Omega = []
+        for i in range(len(beta)):
+            Omega.append(Omega_GW_PTA(f, beta[i], fref, snr, Tobs, p, wn, dt))     
+        return beta, np.array(Omega)
+    
+    p, wn, dt = detectors.get_EPTA_pulsars()
+    beta, Omega = all_Omega_GW_PTA(f, snr, Tobs,  p, wn, dt)
+    pls = np.zeros(len(f))
+    for i in range(len(f)):
+        pls[i] = np.max(Omega[:,i])
+    return pls
 
