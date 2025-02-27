@@ -12,7 +12,10 @@ setup(
         "matplotlib",   
         "healpy",
         "astropy",
-        "mpmath"
+        "mpmath", 
+        "glob2",
+        "PINT",
+
     ],
     author="Ilaria Caporali, Angelo Ricciardone",
     description="A package for gravitational wave background analysis",
