@@ -14,7 +14,7 @@ setup(
         "astropy",
         "mpmath", 
         "glob2",
-        "PINT",
+        "pint",
 
     ],
     author="Ilaria Caporali, Angelo Ricciardone",
