@@ -21,17 +21,21 @@ from astropy.coordinates import SkyCoord
 
 class Rotations:
 
+    '''
+    Class to handle rotations in 3D space
+    '''
 
     def rot_axis(vector, angle, axis):
         """
         Rotate a vector around a given axis by a certain angle
 
         Parameters:
-        vector: vector to rotate
-        angle: angle of rotation (radians)
-        axis: axis of rotation (unitary vector)
+        - vector: array_like (vector to rotate)
+        - angle: float (angle of rotation (radians))
+        - axis: array_like (axis of rotation (unitary vector))
 
-        return: rotated vector
+        Returns: 
+        - rotated vector: array_like
         """
         axis = axis / np.linalg.norm(axis)
         cos_theta = cos(angle)
@@ -43,10 +47,11 @@ class Rotations:
         Calculate the angle between two vectors
 
         Parameters:
-        vec1: first vector
-        vec2: second vector
+        - vec1: array_like (first vector)
+        - vec2: array_like (second vector)
 
-        return: angle between the two vectors
+        Returns:
+        - angle: float (angle between the two vectors)
         """
         return np.arccos(np.clip(np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2)), -1.0, 1.0))
 
@@ -55,16 +60,21 @@ class Rotations:
         Find a vector perpendicular to two given vectors
 
         Parameters:
-        vec1: first vector
-        vec2: second vector
+        - vec1: array_like (first vector)
+        - vec2: array_like (second vector)
 
-        return: perpendicular vector
+        Returns:
+        - perpendicular vector: array_like
         """
         return np.cross(vec1, vec2)
 
 
 
 class Observatories:
+
+    '''
+    Class to handle the coordinates of the observatories (detectors, both ground and space based)
+    '''
 
     # 2G detectors
 
@@ -149,8 +159,6 @@ class Observatories:
         return c2, xA2, xB2, l, "ET L-shaped Netherlands"
 
     # space-based
-
-    # mettere X, Y, Z
 
     # LISA (Laser Interferometer Space Antenna)
 
@@ -261,36 +269,48 @@ def detector_Pn(det_name):
 
 
 def LISA_noise_AET(f, channel):
-        
-        # Bartolo et al. 2022 https://arxiv.org/abs/2201.08782 Appendix B
-        
-        L = 2.5*1e9 #m
-        c = 3*1e8 #m/s
-        P = 15
-        A = 3
-        pm = 1e-12 #m
-        fm = 1e-15 #m
-        f_star =c/(2*np.pi*L) # Hz
 
+    '''
+    Method to return the noise curve for the LISA detector in the A, E and T channels
 
-        def NA(f): #  Bartolo et al. 2022 https://arxiv.org/abs/2201.08782 Appendix B eq. B.14
-            N = 0.5 * (2 + cos(f/f_star)) * P**2 / L**2 * pm**2 * ( 1 + (0.002/f)**4 ) + \
-                2 * ( 1 + cos(f/f_star) + cos(f/f_star)**2 ) * A**2 / L**2 *fm**2 * (1 + (0.0004/f)**2 ) * (1 + (f/(8*1e-3))**4 ) * ((1/(2* pi*f))**4)
-            return N
+    Parameters:
+    - f: array_like (frequency)
+    - channel: str (channel name)
+
+    Returns:
+    - noise curve: array_like
+    '''
+        
     
-        def NT(f): #  Bartolo et al. 2022 https://arxiv.org/abs/2201.08782 Appendix B eq. B.15
-            N = (1 - cos(f/f_star)) * P**2 / L**2 * pm**2 * ( 1 + (0.002/f)**4 ) + \
-                2 * ( 1 - cos(f/f_star) )**2 * A**2 / L**2 *fm**2 * (1 + (0.0004/f)**2 ) * (1 + (f/(0.008))**4 ) * ((1/(2* pi*f))**4)
-            return N
-            
-        if channel == 'A':
-            return NA(f)
-        elif channel == 'E':
-            return NA(f)
-        elif channel == 'T':
-            return NT(f)
-        else:
-            raise ValueError('Unknown channel')
+    # Bartolo et al. 2022 https://arxiv.org/abs/2201.08782 Appendix B
+    
+    L = 2.5*1e9 #m
+    c = 3*1e8 #m/s
+    P = 15
+    A = 3
+    pm = 1e-12 #m
+    fm = 1e-15 #m
+    f_star =c/(2*np.pi*L) # Hz
+
+
+    def NA(f): #  Bartolo et al. 2022 https://arxiv.org/abs/2201.08782 Appendix B eq. B.14
+        N = 0.5 * (2 + cos(f/f_star)) * P**2 / L**2 * pm**2 * ( 1 + (0.002/f)**4 ) + \
+            2 * ( 1 + cos(f/f_star) + cos(f/f_star)**2 ) * A**2 / L**2 *fm**2 * (1 + (0.0004/f)**2 ) * (1 + (f/(8*1e-3))**4 ) * ((1/(2* pi*f))**4)
+        return N
+
+    def NT(f): #  Bartolo et al. 2022 https://arxiv.org/abs/2201.08782 Appendix B eq. B.15
+        N = (1 - cos(f/f_star)) * P**2 / L**2 * pm**2 * ( 1 + (0.002/f)**4 ) + \
+            2 * ( 1 - cos(f/f_star) )**2 * A**2 / L**2 *fm**2 * (1 + (0.0004/f)**2 ) * (1 + (f/(0.008))**4 ) * ((1/(2* pi*f))**4)
+        return N
+        
+    if channel == 'A':
+        return NA(f)
+    elif channel == 'E':
+        return NA(f)
+    elif channel == 'T':
+        return NT(f)
+    else:
+        raise ValueError('Unknown channel')
         
 #***************************************************************************************************************
 #===============================================================
@@ -300,7 +320,12 @@ def LISA_noise_AET(f, channel):
 def get_NANOGrav_pulsars(): # https://zenodo.org/records/14773896
 
     '''
-    Function to get the pulsar data from the PINT models
+    Function to get the pulsar data from the NANOGrav dataset
+
+    Returns:
+    - N_pulsar: int (number of pulsars)
+    - pulsar_xyz: array_like (pulsar coordinates)
+    - DIST_array: array_like (pulsar distances) # in meters
 
     '''
 
@@ -308,44 +333,38 @@ def get_NANOGrav_pulsars(): # https://zenodo.org/records/14773896
     pfiles = [pf for pf in pfiles if not 'gbt' in pf and not 'ao' in pf]
     pnames = [pf[4:pf.index('_PINT')] for pf in pfiles]
 
-    RA = {}   # Ascensione Retta (Right Ascension)
+    RA = {}   # Right Ascension
     DEC = {}  # Declination
-    DIST = {} # Distanza (in parsec)
+    DIST = {} # Distance (in parsec)
 
     for pf in pfiles:
-        # Carica il modello PINT
         m = get_model(pf)
-
-        # Estrai le coordinate ICRS (RA e DEC)
         c = m.components['AstrometryEcliptic'].coords_as_ICRS()
-        RA[m.PSR.value] = c.ra.deg  # Convertito in gradi
+        RA[m.PSR.value] = c.ra.deg  
         DEC[m.PSR.value] = c.dec.deg
 
-        # Estrai la distanza (basata sulla parallasse, se disponibile)
         if hasattr(m, 'PX') and m.PX.value > 0:  
-            DIST[m.PSR.value] = 1000 / m.PX.value  # Converti la parallasse in parsec
+            DIST[m.PSR.value] = 1000 / m.PX.value  
         else:
-            DIST[m.PSR.value] = None  # Se la parallasse non è disponibile
+            DIST[m.PSR.value] = None  
 
-    # converti da parsec a metri
+    # parsec 2 meters
     for psr in DIST.keys():
         if DIST[psr] is not None:
             DIST[psr] *= 3.086e16
 
-    # converti da rad dec a  theta phi 
+    # ra dec 2  theta phi 
 
     theta_pulsar = np.deg2rad(90.0 - np.array(list(DEC.values())))
     phi_pulsar = np.deg2rad(list(RA.values()))
 
-    # Calcola le coordinate cartesiane
-
-    # Converte i dizionari in array NumPy
-    valid_indices = [psr for psr in DIST if DIST[psr] is not None]  # Escludi None
+    # dictionaries 2 arrays
+    valid_indices = [psr for psr in DIST if DIST[psr] is not None] 
     DIST_array = np.array([DIST[psr] for psr in valid_indices])
     theta_pulsar = np.deg2rad(90.0 - np.array([DEC[psr] for psr in valid_indices]))
     phi_pulsar = np.deg2rad([RA[psr] for psr in valid_indices])
 
-    # Calcola le coordinate cartesiane
+    # spherical 2 cartesian
     x_pulsar = np.sin(theta_pulsar) * np.cos(phi_pulsar)
     y_pulsar = np.sin(theta_pulsar) * np.sin(phi_pulsar)
     z_pulsar = np.cos(theta_pulsar)
@@ -356,7 +375,17 @@ def get_NANOGrav_pulsars(): # https://zenodo.org/records/14773896
     return N_pulsar, pulsar_xyz, DIST_array
 
 
-def get_EPTA_pulsars():
+def get_EPTA_pulsars(): # https://github.com/Mauropieroni/fastPTA/blob/main/fastPTA/defaults/default_catalog.txt
+
+    '''
+    Function to get the pulsar data from the EPTA dataset
+
+    Returns:
+    - pulsar_xyz: array_like (pulsar coordinates)
+    - wn: array_like (white noise)
+    - dt: float (sampling time)
+    '''
+
     name, phi, theta, ntoas, Tspan, wn, log10_A_red, g_red, log10_A_dm, g_dm, log10_A_sv, g_sv, dt = np.genfromtxt(EPTA_dir+ '/'+'epta.txt', unpack=True, skip_header=True, delimiter=None)
 
     x_pulsar = np.sin(theta) * np.cos(phi)
