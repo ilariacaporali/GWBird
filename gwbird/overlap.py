@@ -221,7 +221,7 @@ class Response:
     # pulsar timing array
 
 
-    def pairwise_overlap(f, pi, pj, pol):
+    def pairwise_overlap(f, pi, pj, pol, psi=0):
 
         '''
         Compute the overlap reduction function between two pulsars
@@ -255,25 +255,29 @@ class Response:
             '''
             Fp1 = AngularPatternFunction.F_pulsar(theta, phi, psi, p1)
             Fp2 = AngularPatternFunction.F_pulsar(theta, phi, psi, p2)
+
+            delta = 1 if np.array_equal(p1, p2) else 0
+            k = 1 + delta
+
             if pol == 't':
-                gamma_ij = 3 * (Fp1[0] * Fp2[0] + Fp1[1] * Fp2[1]) * (1/(4*np.pi)) * np.sin(theta)
+                gamma_ij = 3 * (Fp1[0] * Fp2[0] + Fp1[1] * Fp2[1]) * (1/(8*np.pi)) * np.sin(theta) * k
                 return gamma_ij
             elif pol == 'v':
-                gamma_ij = 3 * (Fp1[2] * Fp2[2] + Fp1[3] * Fp2[3]) * (1/(4*np.pi)) * np.sin(theta)
+                gamma_ij = 3 * (Fp1[2] * Fp2[2] + Fp1[3] * Fp2[3]) * (1/(8*np.pi)) * np.sin(theta) * k
                 return gamma_ij
             elif pol == 's':
-                gamma_ij = 3 * Fp1[4] * Fp2[4] * (1/(4*np.pi)) * np.sin(theta)
+                gamma_ij = 3 * Fp1[4] * Fp2[4] * (1/(4*np.pi)) * np.sin(theta) * k
                 return gamma_ij
             elif pol == 'I':
-                gamma_ij = 3 * (Fp1[0] * Fp2[0] + Fp1[1] * Fp2[1]) * (1/(4*np.pi)) * np.sin(theta)
+                gamma_ij = 3 * (Fp1[0] * Fp2[0] + Fp1[1] * Fp2[1]) * (1/(8*np.pi)) * np.sin(theta) * k
                 return gamma_ij
             elif pol == 'V':
-                gamma_ij = 3j * (Fp1[0] * Fp2[1] - Fp1[1] * Fp2[0]) * (1/(4*np.pi)) * np.sin(theta)
+                gamma_ij = 3j * (Fp1[0] * Fp2[1] - Fp1[1] * Fp2[0]) * (1/(8*np.pi)) * np.sin(theta) * k
                 return gamma_ij
             else:
                 raise ValueError('Unknown polarization')
 
-        def gamma(p1, p2, f, pol):
+        def gamma(p1, p2, f, pol, psi):
             '''
             Overlap reduction function between two pulsars
 
@@ -290,13 +294,13 @@ class Response:
             theta = np.linspace(0, np.pi, 100)
             phi = np.linspace(0, 2*np.pi, 100)
             Theta, Phi = np.meshgrid(theta, phi)
-            integrand = gamma_integrand(Theta, Phi, 0, p1, p2, pol)
+            integrand = gamma_integrand(Theta, Phi, psi, p1, p2, pol)
             integral = np.trapezoid(np.trapezoid(integrand, theta), phi)
             return np.abs(integral)
 
-        return gamma(pi, pj, f, pol)
+        return gamma(pi, pj, f, pol, psi)
     
-    def overlap_EPTA(f, pol):
+    def overlap_EPTA(f, pol, psi = 0):
 
         '''
         Compute the overlap reduction function for a set of pulsars (EPTA)
@@ -315,11 +319,11 @@ class Response:
 
         for i in range(N_pulsar):
             for j in range(i +1, N_pulsar):
-                overlap += Response.pairwise_overlap( f, pulsar_xyz[i], pulsar_xyz[j], pol)
+                overlap += Response.pairwise_overlap( f, pulsar_xyz[i], pulsar_xyz[j], pol, psi)
 
         return overlap
 
-    def overlap_NANOGrav(f, pol):
+    def overlap_NANOGrav(f, pol, psi = 0):
 
         '''
         Compute the overlap reduction function for a set of pulsars (NANOGrav)
@@ -338,7 +342,7 @@ class Response:
 
         for i in range(N_pulsar):
             for j in range(i +1, N_pulsar):
-                overlap += Response.pairwise_overlap(f, pulsar_xyz[i], pulsar_xyz[j], pol)
+                overlap += Response.pairwise_overlap(f, pulsar_xyz[i], pulsar_xyz[j], pol, psi)
                 
         return overlap
         

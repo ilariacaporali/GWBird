@@ -349,7 +349,7 @@ class AngularResponse:
         angular response: angular response for a pair of pulsars
         '''
         
-        def gamma_integrand_ellm(ell, m, theta, phi, psi, p1, p2, pol):
+        def Rellm_integrand_PTA(ell, m, theta, phi, psi, p1, p2, pol):
             '''
             Compute the integrand of the angular response function for a pair of pulsar
 
@@ -366,6 +366,9 @@ class AngularResponse:
             Fp1 = AngularPatternFunction.F_pulsar(theta, phi, psi, p1)
             Fp2 = AngularPatternFunction.F_pulsar(theta, phi, psi, p2)
 
+            delta = 1 if np.array_equal(p1, p2) else 0
+            k = 1 + delta
+
             if pol=='t':
                 gamma_ij = 3* (Fp1[0] * Fp2[0] + Fp1[1] * Fp2[1])
             elif pol=='v':
@@ -376,9 +379,9 @@ class AngularResponse:
                 gamma_ij = 3* (Fp1[0] * Fp2[0] + Fp1[1] * Fp2[1])
             elif pol=='V':
                 gamma_ij = 3j* (Fp1[0] * Fp2[1] - Fp1[1] * Fp2[0])
-            return gamma_ij *  sph_harm_y(ell, m, theta, phi)* np.sqrt(4* np.pi)/ (4*np.pi)
+            return gamma_ij *  sph_harm(m, ell, phi, theta)* np.sqrt(4* np.pi)/ (8*np.pi) * k
 
-        def gamma_ellm(ell, m, p1, p2, psi, f, pol):
+        def Rellm_PTA(ell, m, p1, p2, psi, f, pol):
             '''
             Compute the integral of the angular response function for a pair of pulsar
 
@@ -397,11 +400,11 @@ class AngularResponse:
             theta = np.linspace(0, np.pi, 100)
             phi = np.linspace(0, 2*np.pi, 100)
             Theta, Phi = np.meshgrid(theta, phi)
-            integrand = gamma_integrand_ellm(ell, m, Theta, Phi, psi, p1, p2, pol)
+            integrand = Rellm_integrand_PTA(ell, m, Theta, Phi, psi, p1, p2, pol)
             integral = np.trapezoid(np.trapezoid(np.sin(Theta) * integrand, theta), phi)
             return np.abs(integral)
         
-        def gamma_ell(ell, p1, p2, f, psi, pol):
+        def Rell_func_PTA(ell, p1, p2, f, psi, pol):
             '''
             Compute the angular response for a pair of pulsar
 
@@ -417,10 +420,10 @@ class AngularResponse:
             '''
             gamma_l = 0
             for m in range(-ell, ell+1):
-                gamma_l += np.abs(gamma_ellm(ell, m, p1, p2, psi, f, pol))**2
+                gamma_l += np.abs(Rellm_PTA(ell, m, p1, p2, psi, f, pol))**2
             return np.sqrt(gamma_l) 
 
-        return gamma_ell(ell, pi, pj, f, pol)   
+        return Rell_func_PTA(ell, pi, pj, f, psi, pol)   
     
 
     def R_ell_EPTA(ell, f, pol, psi):
@@ -630,7 +633,7 @@ class Sensitivity_ell:
         return np.sum(1 / (pls_l) ** 2, axis=0) ** (-0.5)
     
 
-    def apls_PTA_EPTA(ell, f, snr, Tobs, Cl, pol):
+    def PLS_ell_PTA_EPTA(ell, f, snr, Tobs, Cl, pol, psi):
 
         '''
         Compute the power law sensitivity curve for EPTA  pulsars catalog
@@ -655,42 +658,42 @@ class Sensitivity_ell:
             mask = f >= 8e-9 # Create a boolean mask where True indicates elements greater than or equal to 8e-9
             return np.where(mask, PTA_Pn(wn, dt) * 12 * (np.pi**2) * f**2, 1) # Apply the mask to the result
         
-        def PTA_Omegaeff_all(ell, f, p, wn, dt, pol):
+        def PTA_Omegaeff_all(ell, f, p, wn, dt, pol, psi):
             s = 0
             N = len(p)
             for i in range(N):
                 for j in range(i+1, N):
-                    s +=  AngularResponse.R_ell_pairwise(ell, p[i], p[j], f, pol)**2 / (PTA_Sn(f, wn[i], dt[i])* PTA_Sn(f, wn[j], dt[j]))
+                    s +=  AngularResponse.R_ell_pairwise(ell, p[i], p[j], f, pol, psi)**2 / (PTA_Sn(f, wn[i], dt[i])* PTA_Sn(f, wn[j], dt[j]))
 
             return 2 * np.pi * np.pi * f**3 / np.sqrt(s) / (3* ((H0/h)**2))
         
 
-        def Omega_beta_PTA(ell, f, snr, Tobs, Cl, beta, p, wn, dt, pol):
+        def Omega_beta_PTA(ell, f, snr, Tobs, Cl, beta, p, wn, dt, pol, psi):
             Tobs = Tobs*365*24*3600
             fref = 1e-8
-            integrand = ((f/fref)**(2*beta))/ (PTA_Omegaeff_all(ell, f, p, wn, dt, pol)**2) * Cl
+            integrand = ((f/fref)**(2*beta))/ (PTA_Omegaeff_all(ell, f, p, wn, dt, pol, psi)**2) * Cl
             integral = np.trapezoid(integrand, f)
             return snr / np.sqrt(2*Tobs*integral)
 
-        def Omega_GW_PTA(ell, f,  beta, fref, snr, Tobs, Cl,  p, wn, dt, pol):
-            return Omega_beta_PTA(ell, f, snr, Tobs, Cl, beta, p, wn, dt, pol) * ((f/fref)**(beta))
+        def Omega_GW_PTA(ell, f,  beta, fref, snr, Tobs, Cl,  p, wn, dt, pol, psi):
+            return Omega_beta_PTA(ell, f, snr, Tobs, Cl, beta, p, wn, dt, pol, psi) * ((f/fref)**(beta))
 
-        def all_Omega_GW_PTA(ell, f, snr, Tobs, Cl, p, wn, dt, pol):
+        def all_Omega_GW_PTA(ell, f, snr, Tobs, Cl, p, wn, dt, pol, psi):
             beta = np.linspace(-8, 8, 50)
             fref = 1e-8
             Omega = []
             for i in range(len(beta)):
-                Omega.append(Omega_GW_PTA(ell, f, beta[i], fref, snr, Tobs, Cl, p, wn, dt, pol))     
+                Omega.append(Omega_GW_PTA(ell, f, beta[i], fref, snr, Tobs, Cl, p, wn, dt, pol, psi))     
             return beta, np.array(Omega)
         
         p, wn, dt = det.get_EPTA_pulsars()
-        beta, Omega = all_Omega_GW_PTA(ell, f, snr, Tobs, Cl, p, wn, dt, pol)
+        beta, Omega = all_Omega_GW_PTA(ell, f, snr, Tobs, Cl, p, wn, dt, pol, psi)
         pls = np.zeros(len(f))
         for i in range(len(f)):
             pls[i] = np.max(Omega[:,i])
         return pls
     
-    def apls_PTA_NANOGrav(ell, f, snr, Tobs, Cl, pol):
+    def PLS_ell_PTA_NANOGrav(ell, f, snr, Tobs, Cl, pol, psi):
 
         '''
         Compute the power law sensitivity curve for NANOGrav pulsars catalog
@@ -717,36 +720,31 @@ class Sensitivity_ell:
             mask = f >= 8e-9 # Create a boolean mask where True indicates elements greater than or equal to 8e-9
             return np.where(mask, PTA_Pn() * 12 * (np.pi**2) * f**2, 1) # Apply the mask to the result
         
-        def PTA_Omegaeff_all(ell, f, p, pol):
-            s = 0
-            N = len(p)
-            for i in range(N):
-                for j in range(i+1, N):
-                    s +=  AngularResponse.R_ell_pairwise(ell, p[i], p[j], f, pol)**2 / (PTA_Sn(f)* PTA_Sn(f))
-
-            return 2 * np.pi * np.pi * f**3 / np.sqrt(s) / (3* ((H0/h)**2))
+        def PTA_Omegaeff_all(f, response):
+            return 2 * np.pi * np.pi * f**3 / np.sqrt(response/ (PTA_Sn(f)* PTA_Sn(f))) / (3* ((H0/h)**2))
         
 
-        def Omega_beta_PTA(ell, f, snr, Tobs, Cl, beta, p, pol):
+        def Omega_beta_PTA(f, snr, Tobs, Cl, beta, response): # ell, f, snr, Tobs, Cl, beta, p, pol, psi
             Tobs = Tobs*365*24*3600
             fref = 1e-8
-            integrand = ((f/fref)**(2*beta))/ (PTA_Omegaeff_all(ell, f, p, pol)**2) * Cl
+            integrand = ((f/fref)**(2*beta))/ (PTA_Omegaeff_all(f, response)**2) * Cl
             integral = np.trapezoid(integrand, f)
             return snr / np.sqrt(2*Tobs*integral)
 
-        def Omega_GW_PTA(ell, f,  beta, fref, snr, Tobs, Cl,  p, pol):
-            return Omega_beta_PTA(ell, f, snr, Tobs, Cl, beta, p, pol) * ((f/fref)**(beta))
+        def Omega_GW_PTA(f, beta, fref, snr, Tobs, Cl, response):
+            return Omega_beta_PTA(f, snr, Tobs, Cl, beta, response) * ((f/fref)**(beta))
 
-        def all_Omega_GW_PTA(ell, f, snr, Tobs, Cl, p, pol):
+        def all_Omega_GW_PTA(f, snr, Tobs, Cl, response):
             beta = np.linspace(-8, 8, 50)
             fref = 1e-8
             Omega = []
             for i in range(len(beta)):
-                Omega.append(Omega_GW_PTA(ell, f, beta[i], fref, snr, Tobs, Cl, p, pol))     
+                Omega.append(Omega_GW_PTA(f, beta[i], fref, snr, Tobs, Cl, response))     
             return beta, np.array(Omega)
         
-        _, p, _ = det.get_NANOGrav_pulsars()
-        beta, Omega = all_Omega_GW_PTA(ell, f, snr, Tobs, Cl, p, pol)
+
+        response = AngularResponse.R_ell_NANOGrav(ell, f, pol, psi)
+        beta, Omega = all_Omega_GW_PTA(f, snr, Tobs, Cl, response)
         pls = np.zeros(len(f))
         for i in range(len(f)):
             pls[i] = np.max(Omega[:,i])

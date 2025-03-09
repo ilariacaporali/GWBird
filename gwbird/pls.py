@@ -235,7 +235,7 @@ def PLS(det1, det2, f, fref, pol, snr, Tobs, psi, shift_angle=False, fI=None, Pn
 
 
 
-def PLS_2pol(det1, det2, det3, f, fref, pol, snr, Tobs, psi, shift_angle, fI=None, PnI=None, fJ=None, PnJ=None, fK=None, PnK=None):
+def PLS_2pol(det1, det2, det3, f, fref, pol, snr, Tobs, psi, shift_angle=None, fI=None, PnI=None, fJ=None, PnJ=None, fK=None, PnK=None):
 
     '''
     Evaluate the sensitivity of a network of three detectors to a Gravitational Wave Background (GWB) signal to Vector or scalar contribution.
@@ -392,7 +392,7 @@ def PLS_2pol(det1, det2, det3, f, fref, pol, snr, Tobs, psi, shift_angle, fI=Non
 
 
 
-def PLS_3pol(det1, det2, det3, f, fref, pol, snr, Tobs, psi, shift_angle, fI=None, PnI=None, fJ=None, PnJ=None, fK=None, PnK=None):
+def PLS_3pol(det1, det2, det3, f, fref, pol, snr, Tobs, psi, shift_angle=None, fI=None, PnI=None, fJ=None, PnJ=None, fK=None, PnK=None):
 
     '''
     Evaluate the sensitivity of a network of three detectors to a Gravitational Wave Background (GWB) signal to Tensor, Vector or Scalar contribution
@@ -597,7 +597,7 @@ def PLS_3pol(det1, det2, det3, f, fref, pol, snr, Tobs, psi, shift_angle, fI=Non
     return pls
 
 
-def PLS_PTA_NANOGrav(f, snr, Tobs, pol):
+def PLS_PTA_NANOGrav(f, snr, Tobs, pol, psi):
 
     '''
     Compute the power law sensitivity curve for PTA with the NANOGrav catalog # https://zenodo.org/records/14773896
@@ -668,7 +668,7 @@ def PLS_PTA_NANOGrav(f, snr, Tobs, pol):
             Omega.append(Omega_GW_PTA(f, beta[i], fref, snr, Tobs, S_eff))     
         return beta, np.array(Omega)
     
-    overlap =  Response.overlap_NANOGrav(f, pol)
+    overlap =  Response.overlap_NANOGrav(f, pol, psi)
     S_eff = PTA_Seff(f, overlap)
     beta, Omega = all_Omega_GW_PTA(f, snr, Tobs, S_eff)
     pls = np.zeros(len(f))
@@ -676,7 +676,7 @@ def PLS_PTA_NANOGrav(f, snr, Tobs, pol):
         pls[i] = np.max(Omega[:,i])
     return pls
 
-def PLS_PTA_EPTA(f, snr, Tobs, pol):
+def PLS_PTA_EPTA(f, snr, Tobs, pol, psi):
 
     '''
     Compute the power law sensitivity curve for PTA with an EPTA catalog # https://github.com/Mauropieroni/fastPTA/blob/main/fastPTA/defaults/default_catalog.txt
@@ -707,7 +707,7 @@ def PLS_PTA_EPTA(f, snr, Tobs, pol):
         mask = f >= 8e-9 # Create a boolean mask where True indicates elements greater than or equal to 8e-9
         return np.where(mask, PTA_Pn(wn, dt) * 12 * (np.pi**2) * f**2, 1) # Apply the mask to the result
 
-    def PTA_Omegaeff_all(f, p, wn, dt, pol):
+    def PTA_Omegaeff_all(f, p, wn, dt, pol, psi):
         '''
         Returns the effective energy density of the PTA
         '''
@@ -715,29 +715,29 @@ def PLS_PTA_EPTA(f, snr, Tobs, pol):
         N = len(p)
         for i in range(N):
             for j in range(i+1, N):
-                s +=  Response.pairwise_overlap(f, p[i], p[j], pol)**2 / (PTA_Sn(f, wn[i], dt[i])* PTA_Sn(f, wn[j], dt[j]))
+                s +=  Response.pairwise_overlap(f, p[i], p[j], pol, psi)**2 / (PTA_Sn(f, wn[i], dt[i])* PTA_Sn(f, wn[j], dt[j]))
 
         return 2 * np.pi * np.pi * f**3 / np.sqrt(s) / (3* ((H0/h)**2))
     
 
-    def Omega_beta_PTA(f, snr, Tobs, beta, p, wn, dt, pol):
+    def Omega_beta_PTA(f, snr, Tobs, beta, p, wn, dt, pol, psi):
         '''
         Returns the energy density for a given beta
         '''
         Tobs = Tobs*365*24*3600
         fref = 1e-8
-        integrand = ((f/fref)**(2*beta))/ (PTA_Omegaeff_all(f, p, wn, dt, pol)**2)
+        integrand = ((f/fref)**(2*beta))/ (PTA_Omegaeff_all(f, p, wn, dt, pol, psi)**2)
         integral = np.trapezoid(integrand, f)
         return snr / np.sqrt(2*Tobs*integral)
 
 
-    def Omega_GW_PTA(f,  beta, fref, snr, Tobs,  p, wn, dt, pol):
+    def Omega_GW_PTA(f,  beta, fref, snr, Tobs,  p, wn, dt, pol, psi):
         '''
         Returns the power spectral density of the GW signal
         '''
-        return Omega_beta_PTA(f, snr, Tobs, beta, p, wn, dt, pol) * ((f/fref)**(beta))
+        return Omega_beta_PTA(f, snr, Tobs, beta, p, wn, dt, pol, psi) * ((f/fref)**(beta))
 
-    def all_Omega_GW_PTA(f, snr, Tobs, p, wn, dt, pol):
+    def all_Omega_GW_PTA(f, snr, Tobs, p, wn, dt, pol, psi):
         '''
         Returns the energy density of the GW signal for beta values from beta_min to beta_max
         '''
@@ -745,11 +745,11 @@ def PLS_PTA_EPTA(f, snr, Tobs, pol):
         fref = 1e-8
         Omega = []
         for i in range(len(beta)):
-            Omega.append(Omega_GW_PTA(f, beta[i], fref, snr, Tobs, p, wn, dt, pol))     
+            Omega.append(Omega_GW_PTA(f, beta[i], fref, snr, Tobs, p, wn, dt, pol, psi))     
         return beta, np.array(Omega)
     
     p, wn, dt = detectors.get_EPTA_pulsars()
-    beta, Omega = all_Omega_GW_PTA(f, snr, Tobs,  p, wn, dt, pol)
+    beta, Omega = all_Omega_GW_PTA(f, snr, Tobs,  p, wn, dt, pol, psi)
     pls = np.zeros(len(f))
     for i in range(len(f)):
         pls[i] = np.max(Omega[:,i])

@@ -288,7 +288,7 @@ class Skymaps:
         if pol not in overlap_map:
             raise ValueError("Invalid polarization type. Choose from 't', 'v', 's', 'I', 'V'")
     
-        selected_map = np.squeeze(overlap_map[pol])
+        selected_map = np.squeeze(np.real(overlap_map[pol]))
 
         plt.close('all')  
         plt.rcParams.update({'font.size': 15})
