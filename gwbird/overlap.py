@@ -260,19 +260,20 @@ class Response:
             k = 1 + delta
 
             if pol == 't':
-                gamma_ij = 3 * (Fp1[0] * Fp2[0] + Fp1[1] * Fp2[1]) * (1/(8*np.pi)) * np.sin(theta) * k
+                gamma_ij = 3 * (Fp1[0] * np.conj(Fp2[0]) + Fp1[1] * np.conj(Fp2[1])) * (1/(8*np.pi)) * np.sin(theta) * k
                 return gamma_ij
             elif pol == 'v':
-                gamma_ij = 3 * (Fp1[2] * Fp2[2] + Fp1[3] * Fp2[3]) * (1/(8*np.pi)) * np.sin(theta) * k
+                gamma_ij = 3 * (Fp1[2] * np.conj(Fp2[2]) + Fp1[3] * np.conj(Fp2[3])) * (1/(8*np.pi)) * np.sin(theta) * k
+                #gamma_ij = 3 * (2*(np.sin(2*theta)*np.cos(phi)/(2*(1+np.cos(theta))))**2 ) * (1/(8*np.pi)) * np.sin(theta) * k
                 return gamma_ij
             elif pol == 's':
-                gamma_ij = 3 * Fp1[4] * Fp2[4] * (1/(4*np.pi)) * np.sin(theta) * k
+                gamma_ij = 3 * Fp1[4] * np.conj(Fp2[4]) * (1/(8*np.pi)) * np.sin(theta) * k
                 return gamma_ij
             elif pol == 'I':
-                gamma_ij = 3 * (Fp1[0] * Fp2[0] + Fp1[1] * Fp2[1]) * (1/(8*np.pi)) * np.sin(theta) * k
+                gamma_ij = 3 * (Fp1[0] * np.conj(Fp2[0]) + Fp1[1] * np.conj(Fp2[1])) * (1/(8*np.pi)) * np.sin(theta) * k
                 return gamma_ij
             elif pol == 'V':
-                gamma_ij = 3j * (Fp1[0] * Fp2[1] - Fp1[1] * Fp2[0]) * (1/(8*np.pi)) * np.sin(theta) * k
+                gamma_ij = 3j * (Fp1[0] * np.conj(Fp2[1]) - Fp1[1] * np.conj(Fp2[0])) * (1/(8*np.pi)) * np.sin(theta) * k
                 return gamma_ij
             else:
                 raise ValueError('Unknown polarization')
@@ -300,30 +301,8 @@ class Response:
 
         return gamma(pi, pj, f, pol, psi)
     
-    def overlap_EPTA(f, pol, psi = 0):
 
-        '''
-        Compute the overlap reduction function for a set of pulsars (EPTA)
-
-        Parameters:
-        - f: array_like (Frequency in Hz)
-        - pol: str (Polarization of the signal, 't' for tensor, 'v' for vector, 's' for scalar, 'I' for intensity, 'V' for circular)
-
-        Return:
-        - overlap: array_like (Overlap reduction function for a set of pulsars)
-        '''
-
-        pulsar_xyz, _, _ = detectors.get_EPTA_pulsars()
-        N_pulsar = len(pulsar_xyz)
-        overlap = np.zeros(len(f))
-
-        for i in range(N_pulsar):
-            for j in range(i +1, N_pulsar):
-                overlap += Response.pairwise_overlap( f, pulsar_xyz[i], pulsar_xyz[j], pol, psi)
-
-        return overlap
-
-    def overlap_NANOGrav(f, pol, psi = 0):
+    def overlap_PTA(f, pol, psi = 0):
 
         '''
         Compute the overlap reduction function for a set of pulsars (NANOGrav)

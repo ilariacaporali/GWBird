@@ -223,7 +223,7 @@ def available_detectors():
     '''
     List of available detectors
     '''
-    return ['LIGO H', 'LIGO L', 'Virgo', 'KAGRA', 'CE', 'ET X', 'ET Y', 'ET Z', 'ET L1', 'ET L2', 'LISA X', 'LISA Y', 'LISA Z']
+    return ['LIGO H', 'LIGO L', 'Virgo', 'KAGRA', 'CE', 'ET X', 'ET Y', 'ET Z', 'ET A', 'ET E', 'ET T', 'ET L1', 'ET L2', 'LISA X', 'LISA Y', 'LISA Z', 'LISA A', 'LISA E', 'LISA T']
     
 
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -374,23 +374,3 @@ def get_NANOGrav_pulsars(): # https://zenodo.org/records/14773896
 
     return N_pulsar, pulsar_xyz, DIST_array
 
-
-def get_EPTA_pulsars(): # https://github.com/Mauropieroni/fastPTA/blob/main/fastPTA/defaults/default_catalog.txt
-
-    '''
-    Function to get the pulsar data from the EPTA dataset
-
-    Returns:
-    - pulsar_xyz: array_like (pulsar coordinates)
-    - wn: array_like (white noise)
-    - dt: float (sampling time)
-    '''
-
-    name, phi, theta, ntoas, Tspan, wn, log10_A_red, g_red, log10_A_dm, g_dm, log10_A_sv, g_sv, dt = np.genfromtxt(EPTA_dir+ '/'+'epta.txt', unpack=True, skip_header=True, delimiter=None)
-
-    x_pulsar = np.sin(theta) * np.cos(phi)
-    y_pulsar = np.sin(theta) * np.sin(phi)
-    z_pulsar = np.cos(theta)
-    pulsar_xyz = np.array([x_pulsar, y_pulsar, z_pulsar]).T
-
-    return pulsar_xyz, wn, dt
