@@ -1,5 +1,5 @@
 import numpy as np
-from numpy import pi, cos, sin, sqrt
+from numpy import pi,sqrt
 import matplotlib.pyplot as plt
 from gwbird import detectors 
 from gwbird.utils import c

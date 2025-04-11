@@ -10,3 +10,6 @@ __pycache__/
 dist/
 build/
 examplepaper/
+
+# private example
+example_private.ipynb

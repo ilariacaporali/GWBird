@@ -4,11 +4,8 @@ from scipy.spatial.transform import Rotation as R
 from gwbird.utils import REarth
 from gwbird.psd import psd_dir
 from gwbird.NANOGrav import NANOGrav_dir
-from gwbird.EPTA import EPTA_dir
 from pint.models import get_model
-import glob, os #glob2
-from astropy import units as u
-from astropy.coordinates import SkyCoord
+import glob, os 
 
 
 

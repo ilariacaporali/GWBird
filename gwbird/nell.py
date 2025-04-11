@@ -1,10 +1,10 @@
 import numpy as np
-from numpy import cos, sin, pi, sqrt
+from numpy import sin, pi, sqrt
 from mpmath import mp
 from gwbird import detectors as det
-from gwbird.skymap import AngularPatternFunction
-from scipy.special import sph_harm, sph_harm_y
-from gwbird.utils import c, H0, h
+from gwbird.skymap import Basis, AngularPatternFunction
+from scipy.special import sph_harm
+from gwbird.utils import H0, h, c
 
 '''
 The nell module contain the following classes:
@@ -55,6 +55,7 @@ class AngularResponse:
             Returns:
             - integrand: array_like (Integrand of the anisotropic response function)
             '''
+
 
             f = f.reshape(len(f), 1, 1)
             
@@ -333,7 +334,7 @@ class AngularResponse:
             else:
                 raise ValueError('Unknown combination of channels')
 
-    def R_ell_pairwise(ell, pi, pj, f, pol, psi):
+    def R_ell_pairwise(ell, pi, pj, Di, Dj, f, pol, psi):
 
         '''
         Compute the angular response for a pair of pulsars
@@ -349,7 +350,7 @@ class AngularResponse:
         angular response: angular response for a pair of pulsars
         '''
         
-        def Rellm_integrand_PTA(ell, m, theta, phi, psi, p1, p2, pol):
+        def Rellm_integrand_PTA(ell, m, theta, phi, psi, p1, p2, Di, Dj, f, pol):
             '''
             Compute the integrand of the angular response function for a pair of pulsar
 
@@ -363,25 +364,32 @@ class AngularResponse:
             - p2: len(3) array_like (pulsar j position in the xyz coordinates)
             - pol: str (polarization: 't' for tensor, 'v' for vector, 's' for scalar, 'I' for intensity, 'V' for circular polarization)
             '''
+
+            Omega = Basis.m_n_Omega_basis(theta, phi, psi)[2]
+
+            f = f.reshape(len(f), 1, 1)
+            exp1 =(1-np.exp(-2j*np.pi*f*Di*(1+(np.einsum('iab,i->ab', Omega, pi)))/c))
+            exp2 =(1-np.exp(2j*np.pi*f*Dj*(1+(np.einsum('iab,i->ab', Omega, pj)))/c))
             Fp1 = AngularPatternFunction.F_pulsar(theta, phi, psi, p1)
             Fp2 = AngularPatternFunction.F_pulsar(theta, phi, psi, p2)
 
-            delta = 1 if np.array_equal(p1, p2) else 0
-            k = 1 + delta
 
             if pol=='t':
-                gamma_ij = 3* (Fp1[0] * Fp2[0] + Fp1[1] * Fp2[1])
+                gamma_ij = 3* (Fp1[0] * Fp2[0] + Fp1[1] * Fp2[1]) * exp1 * exp2
             elif pol=='v':
-                gamma_ij = 3* (Fp1[2] * Fp2[2] + Fp1[3] * Fp2[3])
+                gamma_ij = 3* (Fp1[2] * Fp2[2] + Fp1[3] * Fp2[3]) * exp1 * exp2
             elif pol=='s':
-                gamma_ij = 3* (Fp1[4] * Fp2[4])
+                gamma_ij = 3* (Fp1[4] * Fp2[4]) * exp1 * exp2
+            # if you want polarization for scalar longitudina , uncomment the following lines
+            # elif pol=='l':
+            #     gamma_ij = 3* (Fp1[4] * Fp2[4]) * exp1 * exp2
             elif pol=='I':
-                gamma_ij = 3* (Fp1[0] * Fp2[0] + Fp1[1] * Fp2[1])
+                gamma_ij = 3* (Fp1[0] * Fp2[0] + Fp1[1] * Fp2[1]) * exp1 * exp2
             elif pol=='V':
-                gamma_ij = 3j* (Fp1[0] * Fp2[1] - Fp1[1] * Fp2[0])
-            return gamma_ij *  sph_harm(m, ell, phi, theta)* np.sqrt(4* np.pi)/ (8*np.pi) * k
+                gamma_ij = 3j* (Fp1[0] * Fp2[1] - Fp1[1] * Fp2[0]) * exp1 * exp2
+            return gamma_ij *  sph_harm(m, ell, phi, theta)* np.sqrt(4* np.pi)/ (8*np.pi) 
 
-        def Rellm_PTA(ell, m, p1, p2, psi, f, pol):
+        def Rellm_PTA(ell, m, p1, p2, Di, Dj, psi, f, pol):
             '''
             Compute the integral of the angular response function for a pair of pulsar
 
@@ -400,11 +408,11 @@ class AngularResponse:
             theta = np.linspace(0, np.pi, 100)
             phi = np.linspace(0, 2*np.pi, 100)
             Theta, Phi = np.meshgrid(theta, phi) 
-            integrand = Rellm_integrand_PTA(ell, m, Theta, Phi, psi, p1, p2, pol)
+            integrand = Rellm_integrand_PTA(ell, m, Theta, Phi, psi, p1, p2, Di, Dj, f, pol)
             integral = np.trapezoid(np.trapezoid(np.sin(Theta) * integrand, theta), phi)
-            return np.abs(integral)
+            return integral
         
-        def Rell_func_PTA(ell, p1, p2, f, psi, pol):
+        def Rell_func_PTA(ell, p1, p2, Di, Dj, f, psi, pol):
             '''
             Compute the angular response for a pair of pulsar
 
@@ -420,10 +428,10 @@ class AngularResponse:
             '''
             gamma_l = 0
             for m in range(-ell, ell+1):
-                gamma_l += np.abs(Rellm_PTA(ell, m, p1, p2, psi, f, pol))**2
+                gamma_l += np.abs(Rellm_PTA(ell, m, p1, p2, Di, Dj, psi, f, pol))**2
             return np.sqrt(gamma_l) 
 
-        return Rell_func_PTA(ell, pi, pj, f, psi, pol)   
+        return Rell_func_PTA(ell, pi, pj, Di, Dj, f, psi, pol)   
     
 
             
@@ -448,7 +456,7 @@ class AngularResponse:
 
         for i in range(N_pulsar):
             for j in range(i +1, N_pulsar):
-                angular_response += AngularResponse.R_ell_pairwise(ell, pulsar_xyz[i], pulsar_xyz[j], f, pol, psi)
+                angular_response += AngularResponse.R_ell_pairwise(ell, pulsar_xyz[i], pulsar_xyz[j],  DIST_array[i],  DIST_array[j], f, pol, psi)
                 
         return angular_response 
 
@@ -625,7 +633,7 @@ class Sensitivity_ell:
         - pls: array_like (power law sensitivity curve  (h^2 \Omega_{GW}(f))
         '''
 
-        _, p, _ = det.get_NANOGrav_pulsars()
+        _, p, d = det.get_NANOGrav_pulsars()
         
         def PTA_Pn():
             DT = (365*24*3600)/20 # s
@@ -645,7 +653,7 @@ class Sensitivity_ell:
             N = len(p)
             for i in range(N):
                 for j in range(i+1, N): 
-                    s +=  AngularResponse.R_ell_pairwise(ell, p[i], p[j], f, pol, psi)**2 
+                    s +=  AngularResponse.R_ell_pairwise(ell, p[i], p[j], d[i], d[j], f, pol, psi)**2 
 
             return 2 * np.pi * np.pi * f**3 / np.sqrt(s/(PTA_Sn(f)* PTA_Sn(f))) / (3* ((H0/h)**2))
         
