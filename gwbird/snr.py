@@ -9,30 +9,17 @@ def SNR(Tobs, f, gw_params, detectors_list, pol, psi=0, shift_angle=None, gw_spe
     allowing either an array of GW parameters or a custom function for the spectrum.
     
     Parameters
-    ----------
-    Tobs : float
-        Observation time in years.
-    f : float
-        Frequency of the GW signal.
-    gw_params : array-like or function
-        If array-like, should be [logA_gw, n_gw]. If a function is provided, it should return Omega_GW(f).
-    fref : float
-        Reference frequency for the GW signal.
-    detectors_list : list of str
-        List of detector names.
-    pol : str
-        Polarization of the GW signal.
-    psi : float, optional
-        Polarization angle of the GW signal.
-    shift_angle : float, optional
-        Shift angle of the GW signal (used only if one of the detectors is ET_L2).
-    gw_spectrum_func : function, optional
-        Custom function defining Omega_GW(f).
-    
+    - Tobs : float (Observation time in years)
+    - f : array_like (Frequency of the GW signal)
+    - gw_params : array-like or None (if array-like, it should be [log10A_gw, n_gw, fref], if None you have to consider a gw_spectrum_func later)
+    - detectors_list : list of str (list of detector names)
+    - pol : str (polarization of the GW signal)
+    - psi : float, optional (polarization angle of the GW signal (default is 0))
+    - shift_angle : float, optional (shift angle used if one of the detectors is ET_L2)
+    - gw_spectrum_func : function, optional (Custom function defining the GW energy spectrum Omega_GW(f))
+
     Returns
-    -------
-    float
-        Signal-to-noise ratio.
+    - float (computed signal-to-noise ratio (SNR))
     """
     
     def Omega_GW(f):
@@ -69,11 +56,11 @@ def SNR(Tobs, f, gw_params, detectors_list, pol, psi=0, shift_angle=None, gw_spe
             mask = f >= 8e-9
             return np.where(mask, PTA_Pn() * 12 * (np.pi**2) * f**2, 1)
         
-        N, p, _ = detectors.get_NANOGrav_pulsars()
+        N, p, D = detectors.get_NANOGrav_pulsars()
         integrand = 0
         for i in range(N):
-            for j in range(i + 1, N):
-                overlap = Response.pairwise_overlap(f, p[i], p[j], pol, psi)
+            for j in range(i + 1, N): 
+                overlap = Response.pairwise_overlap(f, p[i], p[j],D[i], D[j], pol, psi)
                 integrand += (overlap * Omega_GW(f)) ** 2 / (f ** 6 * PTA_Sn(f)**2)
         total_integral = np.trapezoid(integrand, f)
         snr = 3 * H0**2 / (2 * np.pi**2) * np.sqrt(2 * total_integral * Tobs)

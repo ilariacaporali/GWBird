@@ -4,6 +4,8 @@ from gwbird import detectors
 from gwbird.skymap import Basis, AngularPatternFunction
 from gwbird.utils import c
 
+from scipy.integrate import simpson
+
 
 
 # overlap reduction function averaged over the sky
@@ -101,7 +103,7 @@ class Response:
                     *sin(x)
             
             elif(pol=='V'): # https://arxiv.org/pdf/0707.0535
-                return 1j*(5/(8*pi))*\
+                return -1j*(5/(8*pi))*\
                     ( F1[0]* np.conj( F2[1]) \
                     - F1[1] *np.conj(F2[0])) \
                     *sin(x)
@@ -236,7 +238,7 @@ class Response:
         - overlap: array_like (Overlap reduction function between two pulsars)
         '''
 
-        def gamma_integrand(theta, phi, psi, f, p1, p2, Di, Dj, pol):
+        def gamma_integrand(theta, phi, psi, f, pi, pj, Di, Dj, pol):
 
             '''
             Integrand of the overlap reduction function for two pulsars
@@ -245,23 +247,25 @@ class Response:
             - theta: array_like (Polar angle in [0, pi])
             - phi: array_like (Azimuthal angle in [0, 2*pi])
             - psi: float (Polarization angle in [0, pi])
-            - p1: array_like (Position of the first pulsar)
-            - p2: array_like (Position of the second pulsar)
+            - pi: array_like (Position of the first pulsar)
+            - pj: array_like (Position of the second pulsar)
             - pol: str (Polarization of the signal, 't' for tensor, 'v' for vector, 's' for scalar, 'I' for intensity, 'V' for circular)
 
             Returns:
             - gamma_ij: array_like (Integrand of the overlap reduction function)
 
             '''
-            Fp1 = AngularPatternFunction.F_pulsar(theta, phi, psi, p1)
-            Fp2 = AngularPatternFunction.F_pulsar(theta, phi, psi, p2)
+            Fp1 = AngularPatternFunction.F_pulsar(theta, phi, psi, pi)
+            Fp2 = AngularPatternFunction.F_pulsar(theta, phi, psi, pj)
+
+            print('Fp1', Fp1[0])
 
             Omega = Basis.m_n_Omega_basis(theta, phi, psi)[2]
 
             f = f.reshape(len(f), 1, 1)
 
-            exp1 =(1-np.exp(-2j*np.pi*f*Di*(1+(np.einsum('iab,i->ab', Omega, pi)))/c))
-            exp2 =(1-np.exp(2j*np.pi*f*Dj*(1+(np.einsum('iab,i->ab', Omega, pj)))/c))
+            exp1 = (1-np.exp(-2j*np.pi*f*Di*(1+(np.einsum('iab,i->ab', Omega, pi)))/c))
+            exp2 = (1-np.exp(2j*np.pi*f*Dj*(1+(np.einsum('iab,i->ab', Omega, pj)))/c))
             
 
             if pol == 't':
@@ -271,7 +275,7 @@ class Response:
                 gamma_ij = 3 * (Fp1[2] * np.conj(Fp2[2]) + Fp1[3] * np.conj(Fp2[3])) * (1/(8*np.pi)) * np.sin(theta) * exp1 * exp2
                 return gamma_ij
             elif pol == 's':
-                gamma_ij = 3 * Fp1[4] * np.conj(Fp2[4]) * (1/(8*np.pi)) * np.sin(theta) * exp1 * exp2
+                gamma_ij = 3 * Fp1[4] * np.conj(Fp2[4]) * (1/(8*np.pi)) * np.sin(theta) * np.ones_like(f)#* exp1 * exp2
                 return gamma_ij
             elif pol == 'l':
                 gamma_ij = 3 * Fp1[5] * np.conj(Fp2[5]) * (1/(8*np.pi)) * np.sin(theta) * exp1 * exp2
@@ -290,8 +294,8 @@ class Response:
             Overlap reduction function between two pulsars
 
             Parameters:
-            - p1: array_like (Position of the first pulsar)
-            - p2: array_like (Position of the second pulsar)
+            - pi: array_like (Position of the first pulsar)
+            - pj: array_like (Position of the second pulsar)
             - f: array_like (Frequency in Hz)
             - pol: str (Polarization of the signal, 't' for tensor, 'v' for vector, 's' for scalar, 'I' for intensity, 'V' for circular)
 
@@ -299,11 +303,12 @@ class Response:
             - integral: array_like (Overlap reduction function between two pulsars)
 
             '''
-            theta = np.linspace(0, np.pi, 100)
-            phi = np.linspace(0, 2*np.pi, 100)
+            theta = np.linspace(0.001, np.pi-0.001, 100)
+            phi = np.linspace(0.001, 2*np.pi-0.001, 100)
             Theta, Phi = np.meshgrid(theta, phi)
             integrand = gamma_integrand(Theta, Phi, psi, f, pi, pj, Di, Dj, pol)
             integral = np.trapezoid(np.trapezoid(integrand, theta), phi)
+            #integral = simpson(simpson(integrand, theta, axis=1), phi)
             return np.real(integral)
 
         return gamma(pi, pj, Di, Dj, f, pol, psi)

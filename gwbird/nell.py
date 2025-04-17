@@ -17,13 +17,13 @@ The nell module contain the following classes:
 
 class AngularResponse:
    
-    def R_ell(l, det1, det2, f, pol, psi, shift_angle=False):
+    def R_ell(ell, det1, det2, f, pol, psi, shift_angle=False):
         '''
         Anisotropic response function for gravitational wave detectors or networks.
         # https://arxiv.org/abs/2201.08782
 
         Parameters:
-        - l: int (Multipole to consider)
+        - ell: int (Multipole to consider)
         - det1, det2: str or list of str (Detector names)
         - f: array_like (Frequency in Hz)
         - pol: str (Polarization: 't' for tensor, 'v' for vector, 's' for scalar)
@@ -34,13 +34,13 @@ class AngularResponse:
         - R_ell: array_like (Angular response function)
         '''
 
-        def Rellm_integrand(l, m, x, y, psi, c1, u1, v1, c2, u2, v2, f, pol, L1, L2):
+        def Rellm_integrand(ell, m, x, y, psi, c1, u1, v1, c2, u2, v2, f, pol, L1, L2):
             
             '''
             Integrand of the anisotropic response function
 
             Parameters:
-            - l: int (Multipole to consider)
+            - ell: int (Multipole to consider)
             - m: int (Azimuthal number)
             - x: array_like (theta in radians [0, pi])
             - y: array_like (phi in radians [0, 2*pi])
@@ -62,7 +62,7 @@ class AngularResponse:
             F1 = AngularPatternFunction.F(x, y, psi, c1, u1, v1, f, L1)
             F2 = AngularPatternFunction.F(x, y, psi, c2, u2, v2, f, L2)
 
-            sph_harm_val = sph_harm(m, l, y, x)
+            sph_harm_val = sph_harm(m, ell, y, x)
 
             if pol == 't':
                 return (5 / (8 * pi)) * (F1[0] * np.conj(F2[0]) + F1[1] * np.conj(F2[1])) * sph_harm_val * sqrt(4 * pi) * sin(x)
@@ -77,13 +77,13 @@ class AngularResponse:
             else:
                 raise ValueError('Unknown polarization')
 
-        def Rellm(l, m, u1, v1, c1, u2, v2, c2, psi, f, pol, L1, L2):
+        def Rellm(ell, m, u1, v1, c1, u2, v2, c2, psi, f, pol, L1, L2):
             
             '''
             Integral of the anisotropic response function
 
             Parameters:
-            - l: int (Multipole to consider)
+            - ell: int (Multipole to consider)
             - m: int (Azimuthal number)
             - u1, v1, c1: array_like (Detector 1 position parameters)
             - u2, v2, c2: array_like (Detector 2 position parameters)
@@ -99,7 +99,7 @@ class AngularResponse:
             x_values = np.linspace(0, pi, 100)
             y_values = np.linspace(0, 2*pi, 100)
             X, Y = np.meshgrid(x_values,y_values) 
-            f_values = Rellm_integrand(l, m, X, Y, psi, c1, u1, v1, c2, u2, v2, f, pol, L1, L2)
+            f_values = Rellm_integrand(ell, m, X, Y, psi, c1, u1, v1, c2, u2, v2, f, pol, L1, L2)
 
             gamma_x = np.trapezoid(f_values, x_values.reshape(1, 100, 1), axis=1)
             gamma = np.trapezoid(gamma_x, y_values.reshape(1, 1, 100))
@@ -112,12 +112,12 @@ class AngularResponse:
             return real_part + 1j*imag_part
 
 
-        def R_ell_func(l, c1, u1, v1, c2, u2, v2, f, pol, L1, L2, psi):
+        def R_ell_func(ell, c1, u1, v1, c2, u2, v2, f, pol, L1, L2, psi):
             '''    
             Compute the angular response for a pair of detectors
 
             Parameters:
-            - l: int (Multipole to consider)
+            - ell: int (Multipole to consider)
             - c1, u1, v1: array_like (Detector 1 position parameters)
             - c2, u2, v2: array_like (Detector 2 position parameters)
             - f: array_like (Frequency in Hz)
@@ -129,10 +129,10 @@ class AngularResponse:
             Returns:
             - R_ell_func: array_like (Angular response for a pair of detectors)
             '''
-            m_values = np.arange(-l, l+1)
+            m_values = np.arange(-ell, ell+1)
             total = 0
             for m in m_values:
-                total += np.abs(Rellm(l, m, u1, v1, c1, u2, v2, c2, psi, f, pol, L1, L2))**2
+                total += np.abs(Rellm(ell, m, u1, v1, c1, u2, v2, c2, psi, f, pol, L1, L2))**2
             return np.sqrt(total)
 
         # Handling LISA detectors
@@ -156,17 +156,17 @@ class AngularResponse:
             else:
                 c2, u2, v2, L2, _ = det2
 
-            return R_ell_func(l, c1, u1, v1, c2, u2, v2, f, pol, L1, L2, psi)
+            return R_ell_func(ell, c1, u1, v1, c2, u2, v2, f, pol, L1, L2, psi)
 
         # Define response functions for even multipoles (l%2 == 0)
         # AET basis handling 
-        if l % 2 == 0:
-            def R_AA_ell(l, c1, u1, v1, c2, u2, v2, f, pol, L1, L2, psi):
+        if ell % 2 == 0:
+            def R_AA_ell(ell, c1, u1, v1, c2, u2, v2, f, pol, L1, L2, psi):
                 '''
                 Compute the angular response for the AA channel in the AET basis
 
                 Parameters:
-                - l: int (Multipole to consider)
+                - ell: int (Multipole to consider)
                 - c1, u1, v1: array_like (Detector 1 position parameters)
                 - c2, u2, v2: array_like (Detector 2 position parameters)
                 - f: array_like (Frequency in Hz)   
@@ -179,17 +179,17 @@ class AngularResponse:
                 - R_AA_ell: array_like (Angular response for the AA channel in the AET basis)
                 '''
                 total = 0
-                for m in np.arange(-l, l+1):
-                    total += np.abs((1 + np.exp(-4j*np.pi*m/3)) * Rellm(l, m, u1, v1, c1, u1, v1, c1, psi, f, pol, L1, L2)
-                                    - 2 * Rellm(l, m, u1, v1, c1, u2, v2, c2, psi, f, pol, 1, L2))**2
+                for m in np.arange(-ell, ell+1):
+                    total += np.abs((1 + np.exp(-4j*np.pi*m/3)) * Rellm(ell, m, u1, v1, c1, u1, v1, c1, psi, f, pol, L1, L2)
+                                    - 2 * Rellm(ell, m, u1, v1, c1, u2, v2, c2, psi, f, pol, 1, L2))**2
                 return np.sqrt(total/4)
 
-            def R_TT_ell(l, c1, u1, v1, c2, u2, v2, f, pol, L1, L2, psi):
+            def R_TT_ell(ell, c1, u1, v1, c2, u2, v2, f, pol, L1, L2, psi):
                 '''
                 Compute the angular response for the TT channel in the AET basis
 
                 Parameters:
-                - l: int (Multipole to consider)
+                - ell: int (Multipole to consider)
                 - c1, u1, v1: array_like (Detector 1 position parameters)
                 - c2, u2, v2: array_like (Detector 2 position parameters)
                 - f: array_like (Frequency in Hz)
@@ -202,17 +202,17 @@ class AngularResponse:
                 - R_TT_ell: array_like (Angular response for the TT channel in the AET basis)
                 '''
                 total = 0
-                for m in np.arange(-l, l+1):
-                    total += (1 + 2*np.cos(2*np.pi*m/3))**2 * np.abs(Rellm(l, m, u1, v1, c1, u1, v1, c1, psi, f, pol, L1, L2)
-                                                                    + 2 * Rellm(l, m, u1, v1, c1, u2, v2, c2, psi, f, pol, L1, L2))**2
+                for m in np.arange(-ell, ell+1):
+                    total += (1 + 2*np.cos(2*np.pi*m/3))**2 * np.abs(Rellm(ell, m, u1, v1, c1, u1, v1, c1, psi, f, pol, L1, L2)
+                                                                    + 2 * Rellm(ell, m, u1, v1, c1, u2, v2, c2, psi, f, pol, L1, L2))**2
                 return np.sqrt(total/9)
 
-            def R_AE_ell(l, c1, u1, v1, c2, u2, v2, f, pol, L1, L2, psi):
+            def R_AE_ell(ell, c1, u1, v1, c2, u2, v2, f, pol, L1, L2, psi):
                 '''
                 Compute the angular response for the AE channel in the AET basis
 
                 Parameters:
-                - l: int (Multipole to consider)
+                - ell: int (Multipole to consider)
                 - c1, u1, v1: array_like (Detector 1 position parameters)
                 - c2, u2, v2: array_like (Detector 2 position parameters)
                 - f: array_like (Frequency in Hz)
@@ -225,17 +225,17 @@ class AngularResponse:
                 - R_AE_ell: array_like (Angular response for the AE channel in the AET basis)
                 '''
                 total = 0
-                for m in np.arange(-l, l+1):
-                    total += np.sin(np.pi*m/3)**2 * np.abs((1 + np.exp(2j*np.pi*m/3)) * Rellm(l, m, u1, v1, c1, u1, v1, c1, psi, f, pol, L1, L2)
-                                                            - 2 * Rellm(l, m, u1, v1, c1, u2, v2, c2, psi, f, pol, L1, L2))**2
+                for m in np.arange(-ell, ell+1):
+                    total += np.sin(np.pi*m/3)**2 * np.abs((1 + np.exp(2j*np.pi*m/3)) * Rellm(ell, m, u1, v1, c1, u1, v1, c1, psi, f, pol, L1, L2)
+                                                            - 2 * Rellm(ell, m, u1, v1, c1, u2, v2, c2, psi, f, pol, L1, L2))**2
                 return np.sqrt(total/3)
                               
-            def R_AT_ell(l, c1, u1, v1, c2, u2, v2, f, pol, L1, L2, psi):
+            def R_AT_ell(ell, c1, u1, v1, c2, u2, v2, f, pol, L1, L2, psi):
                 '''
                 Compute the angular response for the AT channel in the AET basis
 
                 Parameters:
-                - l: int (Multipole to consider)
+                - ell: int (Multipole to consider)
                 - c1, u1, v1: array_like (Detector 1 position parameters)
                 - c2, u2, v2: array_like (Detector 2 position parameters)
                 - f: array_like (Frequency in Hz)
@@ -248,19 +248,19 @@ class AngularResponse:
                 - R_AT_ell: array_like (Angular response for the AT channel in the AET basis)
                 '''
                 total = 0
-                for m in np.arange(-l, l+1):
-                    total += np.sin(np.pi*m/3)**2 * np.abs((1 + np.exp(2j*np.pi*m/3)) * Rellm(l, m, u1, v1, c1, u1, v1, c1, psi, f, pol, L1, L2)
-                                                            + Rellm(l, m, u1, v1, c1, u2, v2, c2, psi, f, pol, L1, L2))**2
+                for m in np.arange(-ell, ell+1):
+                    total += np.sin(np.pi*m/3)**2 * np.abs((1 + np.exp(2j*np.pi*m/3)) * Rellm(ell, m, u1, v1, c1, u1, v1, c1, psi, f, pol, L1, L2)
+                                                            + Rellm(ell, m, u1, v1, c1, u2, v2, c2, psi, f, pol, L1, L2))**2
                 return np.sqrt(2*total/3)
 
             if (det1.endswith('A') and det2.endswith('A')) or (det1.endswith('E') and det2.endswith('E')):
-                return R_AA_ell(l, c1, u1, v1, c2, u2, v2, f, pol, L1, L2, psi)
+                return R_AA_ell(ell, c1, u1, v1, c2, u2, v2, f, pol, L1, L2, psi)
             elif det1.endswith('T') and det2.endswith('T'):
-                return R_TT_ell(l, c1, u1, v1, c2, u2, v2, f, pol, L1, L2, psi)
+                return R_TT_ell(ell, c1, u1, v1, c2, u2, v2, f, pol, L1, L2, psi)
             elif (det1.endswith('A') and det2.endswith('E')) or (det1.endswith('E') and det2.endswith('A')):
-                return R_AE_ell(l, c1, u1, v1, c2, u2, v2, f, pol, L1, L2, psi)
+                return R_AE_ell(ell, c1, u1, v1, c2, u2, v2, f, pol, L1, L2, psi)
             elif (det1.endswith('A') and det2.endswith('T')) or (det1.endswith('T') and det2.endswith('A')) or (det1.endswith('E') and det2.endswith('T')) or (det1.endswith('T') and det2.endswith('E')):
-                return R_AT_ell(l, c1, u1, v1, c2, u2, v2, f, pol, L1, L2, psi)
+                return R_AT_ell(ell, c1, u1, v1, c2, u2, v2, f, pol, L1, L2, psi)
             else:
                 raise ValueError('Unknown combination of detectors')
 
@@ -277,12 +277,12 @@ class AngularResponse:
                 '''
                 return np.zeros(len(f))
             
-            def R_AE_ell(l, c1, u1, v1, c2, u2, v2, f, pol, L1, L2, psi):
+            def R_AE_ell(ell, c1, u1, v1, c2, u2, v2, f, pol, L1, L2, psi):
                 '''
                 Compute the angular response for the AE channel in the AET basis
 
                 Parameters:
-                - l: int (Multipole to consider)
+                - ell: int (Multipole to consider)
                 - c1, u1, v1: array_like (Detector 1 position parameters)
                 - c2, u2, v2: array_like (Detector 2 position parameters)
                 - f: array_like (Frequency in Hz)
@@ -294,18 +294,18 @@ class AngularResponse:
                 Returns:
                 - R_AE_ell: array_like (Angular response for the AE channel in the AET basis)
                 '''
-                m_values = np.arange(-l, l+1)
+                m_values = np.arange(-ell, ell+1)
                 total = 0
                 for m in m_values:
-                    total += (1 + 2*np.cos(2*np.pi*m/3))**2 * (np.abs(Rellm(l, m, u1, v1, c1, u2, v2, c2, psi, f, pol, L1, L2)))**2
+                    total += (1 + 2*np.cos(2*np.pi*m/3))**2 * (np.abs(Rellm(ell, m, u1, v1, c1, u2, v2, c2, psi, f, pol, L1, L2)))**2
                 return np.sqrt(total/3)
             
-            def R_AT_ell(l, c1, u1, v1, c2, u2, v2, f, pol, L1, L2, psi):
+            def R_AT_ell(ell, c1, u1, v1, c2, u2, v2, f, pol, L1, L2, psi):
                 '''
                 Compute the angular response for the AT channel in the AET basis
 
                 Parameters:
-                - l: int (Multipole to consider)
+                - ell: int (Multipole to consider)
                 - c1, u1, v1: array_like (Detector 1 position parameters)
                 - c2, u2, v2: array_like (Detector 2 position parameters)
                 - f: array_like (Frequency in Hz)
@@ -317,18 +317,18 @@ class AngularResponse:
                 Returns:
                 - R_AT_ell: array_like (Angular response for the AT channel in the AET basis)
                 '''
-                m_values = np.arange(-l, l+1)
+                m_values = np.arange(-ell, ell+1)
                 total = 0 
                 for m in m_values:
-                    total += sin(np.pi*m/3)**2 * (np.abs(Rellm(l, m, u1, v1, c1, u2, v2, c2, psi, f, pol, L1, L2) ))**2
+                    total += sin(np.pi*m/3)**2 * (np.abs(Rellm(ell, m, u1, v1, c1, u2, v2, c2, psi, f, pol, L1, L2) ))**2
                 return np.sqrt(2*total)
 
             if (det1.endswith('A') and det2.endswith('A')) or (det1.endswith('E') and det2.endswith('E')):
                 return R_AA_ell(f)
             elif (det1.endswith('A') and det2.endswith('E')) or (det1.endswith('E') and det2.endswith('A')):
-                return R_AE_ell(l, c1, u1, v1, c2, u2, v2, f, pol, L1, L2, psi)
+                return R_AE_ell(ell, c1, u1, v1, c2, u2, v2, f, pol, L1, L2, psi)
             elif (det1.endswith('A') and det2.endswith('T')) or (det1.endswith('T') and det2.endswith('A')) or (det1.endswith('E') and det2.endswith('T')) or (det1.endswith('T') and det2.endswith('E')):
-                return R_AT_ell(l, c1, u1, v1, c2, u2, v2, f, pol, L1, L2, psi)
+                return R_AT_ell(ell, c1, u1, v1, c2, u2, v2, f, pol, L1, L2, psi)
             elif det1.endswith('T') and det2.endswith('T'):
                 return R_AA_ell(f)
             else:
@@ -349,8 +349,10 @@ class AngularResponse:
         Returns:
         angular response: angular response for a pair of pulsars
         '''
-        
-        def Rellm_integrand_PTA(ell, m, theta, phi, psi, p1, p2, Di, Dj, f, pol):
+
+
+
+        def Rellm_integrand_PTA(ell, m, theta, phi, psi, pi, pj, Di, Dj, f, pol):
             '''
             Compute the integrand of the angular response function for a pair of pulsar
 
@@ -360,8 +362,8 @@ class AngularResponse:
             - theta: array_like (polar angle in radians)
             - phi: array_like (azimuthal angle in radians)
             - psi: float (polarization angle in radians)
-            - p1: len(3) array_like (pulsar i position in the xyz coordinates)
-            - p2: len(3) array_like (pulsar j position in the xyz coordinates)
+            - pi: len(3) array_like (pulsar i position in the xyz coordinates)
+            - pj: len(3) array_like (pulsar j position in the xyz coordinates)
             - pol: str (polarization: 't' for tensor, 'v' for vector, 's' for scalar, 'I' for intensity, 'V' for circular polarization)
             '''
 
@@ -370,34 +372,33 @@ class AngularResponse:
             f = f.reshape(len(f), 1, 1)
             exp1 =(1-np.exp(-2j*np.pi*f*Di*(1+(np.einsum('iab,i->ab', Omega, pi)))/c))
             exp2 =(1-np.exp(2j*np.pi*f*Dj*(1+(np.einsum('iab,i->ab', Omega, pj)))/c))
-            Fp1 = AngularPatternFunction.F_pulsar(theta, phi, psi, p1)
-            Fp2 = AngularPatternFunction.F_pulsar(theta, phi, psi, p2)
-
+            Fp1 = AngularPatternFunction.F_pulsar(theta, phi, psi, pi)
+            Fp2 = AngularPatternFunction.F_pulsar(theta, phi, psi, pj)
+            
 
             if pol=='t':
-                gamma_ij = 3* (Fp1[0] * Fp2[0] + Fp1[1] * Fp2[1]) * exp1 * exp2
+                gamma_ij = 3* (Fp1[0] * np.conj(Fp2[0]) + Fp1[1] * np.conj(Fp2[1])  ) * np.ones_like(f) #* exp1 * exp2
             elif pol=='v':
                 gamma_ij = 3* (Fp1[2] * Fp2[2] + Fp1[3] * Fp2[3]) * exp1 * exp2
             elif pol=='s':
                 gamma_ij = 3* (Fp1[4] * Fp2[4]) * exp1 * exp2
-            # if you want polarization for scalar longitudina , uncomment the following lines
-            # elif pol=='l':
-            #     gamma_ij = 3* (Fp1[4] * Fp2[4]) * exp1 * exp2
+            elif pol=='l':
+                gamma_ij = 3* (Fp1[4] * Fp2[4]) * exp1 * exp2
             elif pol=='I':
                 gamma_ij = 3* (Fp1[0] * Fp2[0] + Fp1[1] * Fp2[1]) * exp1 * exp2
             elif pol=='V':
-                gamma_ij = 3j* (Fp1[0] * Fp2[1] - Fp1[1] * Fp2[0]) * exp1 * exp2
+                gamma_ij = -3j* (Fp1[0] * Fp2[1] - Fp1[1] * Fp2[0]) * exp1 * exp2               
             return gamma_ij *  sph_harm(m, ell, phi, theta)* np.sqrt(4* np.pi)/ (8*np.pi) 
 
-        def Rellm_PTA(ell, m, p1, p2, Di, Dj, psi, f, pol):
+        def Rellm_PTA(ell, m, pi, pj, Di, Dj, psi, f, pol):
             '''
             Compute the integral of the angular response function for a pair of pulsar
 
             Parameters:
             - ell: int (multipole to consider)
             - m: int (azimuthal number)
-            - p1: len(3) array_like (pulsar i position in the xyz coordinates)
-            - p2: len(3) array_like (pulsar j position in the xyz coordinates)
+            - pi: len(3) array_like (pulsar i position in the xyz coordinates)
+            - pj: len(3) array_like (pulsar j position in the xyz coordinates)
             - f: array_like (frequency in Hz)
             - psi: float (polarization angle in radians)
             - pol: str (polarization: 't' for tensor, 'v' for vector, 's' for scalar, 'I' for intensity, 'V' for circular polarization)
@@ -408,18 +409,20 @@ class AngularResponse:
             theta = np.linspace(0, np.pi, 100)
             phi = np.linspace(0, 2*np.pi, 100)
             Theta, Phi = np.meshgrid(theta, phi) 
-            integrand = Rellm_integrand_PTA(ell, m, Theta, Phi, psi, p1, p2, Di, Dj, f, pol)
+            integrand = Rellm_integrand_PTA(ell, m, Theta, Phi, psi, pi, pj, Di, Dj, f, pol)
             integral = np.trapezoid(np.trapezoid(np.sin(Theta) * integrand, theta), phi)
             return integral
         
-        def Rell_func_PTA(ell, p1, p2, Di, Dj, f, psi, pol):
+        #return Rellm_PTA(ell,m,  pi, pj, Di, Dj, psi,f, pol)
+        
+        def Rell_func_PTA(ell, pi, pj, Di, Dj, f, psi, pol):
             '''
             Compute the angular response for a pair of pulsar
 
             Parameters:
             - ell: int (multipole to consider)
-            - p1: len(3) array_like (pulsar i position in the xyz coordinates)
-            - p2: len(3) array_like (pulsar j position in the xyz coordinates)
+            - pi: len(3) array_like (pulsar i position in the xyz coordinates)
+            - pj: len(3) array_like (pulsar j position in the xyz coordinates)
             - f: array_like (frequency in Hz)
             - pol: str (polarization: 't' for tensor, 'v' for vector, 's' for scalar, 'I' for intensity, 'V' for circular polarization)
 
@@ -428,7 +431,7 @@ class AngularResponse:
             '''
             gamma_l = 0
             for m in range(-ell, ell+1):
-                gamma_l += np.abs(Rellm_PTA(ell, m, p1, p2, Di, Dj, psi, f, pol))**2
+                gamma_l += np.abs(Rellm_PTA(ell, m, pi, pj, Di, Dj, psi, f, pol))**2
             return np.sqrt(gamma_l) 
 
         return Rell_func_PTA(ell, pi, pj, Di, Dj, f, psi, pol)   
@@ -642,10 +645,10 @@ class Sensitivity_ell:
 
         def PTA_Sn(f):
             f = np.asarray(f) # Ensure f is a NumPy array
-            mask = f >= 8e-9 # Create a boolean mask where True indicates elements greater than or equal to 8e-9
+            mask = f>= 1/(365*24*60*60*Tobs)
             return np.where(mask, PTA_Pn() * 12 * (np.pi**2) * f**2, 1) # Apply the mask to the result
         
-        def PTA_Omegaeff_all(ell, f, p, pol, psi):
+        def PTA_Omegaeff_all(ell, f, p, d, pol, psi):
             '''
             Returns the effective energy density of the PTA
             '''
@@ -657,29 +660,29 @@ class Sensitivity_ell:
 
             return 2 * np.pi * np.pi * f**3 / np.sqrt(s/(PTA_Sn(f)* PTA_Sn(f))) / (3* ((H0/h)**2))
         
-        Omega_eff = PTA_Omegaeff_all(ell, f, p, pol, psi)
+        Omega_eff = PTA_Omegaeff_all(ell, f, p, d, pol, psi)
 
-        def Omega_beta_PTA(f, snr, Tobs, Cl, beta, p, pol, psi): 
+        def Omega_beta_PTA(f, snr, Tobs, Cl, beta, Omega_eff): 
             Tobs = Tobs*365*24*3600
             fref = 1e-8
             integrand = ((f/fref)**(2*beta))/ (Omega_eff**2) * Cl
             integral = np.trapezoid(integrand, f)
             return snr / np.sqrt(2*Tobs*integral)
 
-        def Omega_GW_PTA(f, beta, fref, snr, Tobs, Cl, p, pol, psi):
-            return Omega_beta_PTA(f, snr, Tobs, Cl, beta, p, pol, psi) * ((f/fref)**(beta))
+        def Omega_GW_PTA(f, beta, fref, snr, Tobs, Cl, Omega_eff):
+            return Omega_beta_PTA(f, snr, Tobs, Cl, beta, Omega_eff) * ((f/fref)**(beta))
 
-        def all_Omega_GW_PTA(f, snr, Tobs, Cl, p, pol, psi):
+        def all_Omega_GW_PTA(f, snr, Tobs, Cl, Omega_eff):
             beta = np.linspace(-8, 8, 50)
             fref = 1e-8
             Omega = []
             for i in range(len(beta)):
-                Omega.append(Omega_GW_PTA(f, beta[i], fref, snr, Tobs, Cl, p, pol, psi))     
+                Omega.append(Omega_GW_PTA(f, beta[i], fref, snr, Tobs, Cl, Omega_eff))     
             return beta, np.array(Omega)
         
 
 
-        beta, Omega = all_Omega_GW_PTA(f, snr, Tobs, Cl, p, pol, psi)
+        beta, Omega = all_Omega_GW_PTA(f, snr, Tobs, Cl, Omega_eff)
         pls = np.zeros(len(f))
         for i in range(len(f)):
             pls[i] = np.max(Omega[:,i])
