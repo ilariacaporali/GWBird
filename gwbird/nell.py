@@ -377,7 +377,7 @@ class AngularResponse:
             
 
             if pol=='t':
-                gamma_ij = 3* (Fp1[0] * np.conj(Fp2[0]) + Fp1[1] * np.conj(Fp2[1])  ) * np.ones_like(f) #* exp1 * exp2
+                gamma_ij = 3* (Fp1[0] * np.conj(Fp2[0]) + Fp1[1] * np.conj(Fp2[1])  ) * exp1 * exp2
             elif pol=='v':
                 gamma_ij = 3* (Fp1[2] * Fp2[2] + Fp1[3] * Fp2[3]) * exp1 * exp2
             elif pol=='s':
@@ -415,7 +415,7 @@ class AngularResponse:
         
         # uncomment this line to use the Rellm_PTA function
             # (you will have to add the m value by hand in Rellm_PTA function)
-
+        # m = your_m_value
         #return Rellm_PTA(ell,m,  pi, pj, Di, Dj, psi,f, pol)
 
         # comment the following lines to use the Rellm_PTA function
