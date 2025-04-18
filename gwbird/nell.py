@@ -413,7 +413,12 @@ class AngularResponse:
             integral = np.trapezoid(np.trapezoid(np.sin(Theta) * integrand, theta), phi)
             return integral
         
+        # uncomment this line to use the Rellm_PTA function
+            # (you will have to add the m value by hand in Rellm_PTA function)
+
         #return Rellm_PTA(ell,m,  pi, pj, Di, Dj, psi,f, pol)
+
+        # comment the following lines to use the Rellm_PTA function
         
         def Rell_func_PTA(ell, pi, pj, Di, Dj, f, psi, pol):
             '''

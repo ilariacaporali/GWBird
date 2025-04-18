@@ -255,10 +255,16 @@ class Response:
             - gamma_ij: array_like (Integrand of the overlap reduction function)
 
             '''
+            Omega = Basis.m_n_Omega_basis(theta, phi, psi)[2]#.T
+            # dot_Omega_pi = np.einsum('ij,j->i', Omega, pi)  # (Npix,)
+            # dot_Omega_pj = np.einsum('ij,j->i', Omega, pj)  # (Npix,)
+
+            # f = f.reshape(-1, 1)  # shape (Nf, 1)
+
+            # exp1 = (1 - np.exp(-2j * np.pi * f * Di * (1 + dot_Omega_pi) / c))  # shape (Nf, Npix)
+            # exp2 = (1 - np.exp(2j * np.pi * f * Dj * (1 + dot_Omega_pj) / c)) 
             Fp1 = AngularPatternFunction.F_pulsar(theta, phi, psi, pi)
             Fp2 = AngularPatternFunction.F_pulsar(theta, phi, psi, pj)
-
-            print('Fp1', Fp1[0])
 
             Omega = Basis.m_n_Omega_basis(theta, phi, psi)[2]
 
@@ -275,7 +281,7 @@ class Response:
                 gamma_ij = 3 * (Fp1[2] * np.conj(Fp2[2]) + Fp1[3] * np.conj(Fp2[3])) * (1/(8*np.pi)) * np.sin(theta) * exp1 * exp2
                 return gamma_ij
             elif pol == 's':
-                gamma_ij = 3 * Fp1[4] * np.conj(Fp2[4]) * (1/(8*np.pi)) * np.sin(theta) * np.ones_like(f)#* exp1 * exp2
+                gamma_ij = 3 * Fp1[4] * np.conj(Fp2[4]) * (1/(8*np.pi)) * np.sin(theta) * exp1 * exp2
                 return gamma_ij
             elif pol == 'l':
                 gamma_ij = 3 * Fp1[5] * np.conj(Fp2[5]) * (1/(8*np.pi)) * np.sin(theta) * exp1 * exp2
@@ -303,12 +309,11 @@ class Response:
             - integral: array_like (Overlap reduction function between two pulsars)
 
             '''
-            theta = np.linspace(0.001, np.pi-0.001, 100)
-            phi = np.linspace(0.001, 2*np.pi-0.001, 100)
+            theta = np.linspace(0, np.pi, 100)
+            phi = np.linspace(0, 2*np.pi, 100)
             Theta, Phi = np.meshgrid(theta, phi)
             integrand = gamma_integrand(Theta, Phi, psi, f, pi, pj, Di, Dj, pol)
             integral = np.trapezoid(np.trapezoid(integrand, theta), phi)
-            #integral = simpson(simpson(integrand, theta, axis=1), phi)
             return np.real(integral)
 
         return gamma(pi, pj, Di, Dj, f, pol, psi)
