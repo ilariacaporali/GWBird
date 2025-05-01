@@ -16,13 +16,7 @@ GWBird is a Python package that allows computing the response and sensitivity of
 
 ### Requirements
 
-To use GWBird, make sure you have the following Python packages installed:
-
-- `numpy`
-- `healpy`
-- `scipy`
-- `mpmath`
-- `matplotlib`
+To use GWBird, make sure to follow this procedure:
 
 1. Create a new conda environment with Python ≥ 3.10
 ```sh
