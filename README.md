@@ -1,4 +1,6 @@
 ![Test Status](https://img.shields.io/badge/Tests-Passed-brightgreen)
+![Conda Environment](https://img.shields.io/badge/environment-conda-green?logo=anaconda)
+
 
 # GWBird 
 
@@ -21,6 +23,33 @@ To use GWBird, make sure you have the following Python packages installed:
 - `scipy`
 - `mpmath`
 - `matplotlib`
+
+1. Create a new conda environment with Python ≥ 3.10
+```sh
+conda create -n myenv python=3.11
+```
+
+2. Activate the environment
+```sh
+conda activate myenv
+```
+3. Install scientific packages
+```sh
+conda install numpy scipy mpmath matplotlib ipykernel
+conda install -c conda-forge healpy
+```
+4. Install PINT (for pulsar timing analysis) from GitHub
+```sh
+pip install git+https://github.com/nanograv/PINT.git
+```
+5. (Optional) Register the environment as a Jupyter kernel
+```sh
+python -m ipykernel install --user --name=myenv --display-name "Python (myenv)"
+```
+6. Verify installation
+```sh
+python -c "import numpy, healpy, scipy, mpmath, matplotlib, pint; print('✅ All packages installed correctly.')"
+```
 
 ### Download and Installation
 
