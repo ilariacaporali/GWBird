@@ -370,8 +370,8 @@ class AngularResponse:
             Omega = Basis.m_n_Omega_basis(theta, phi, psi)[2]
 
             f = f.reshape(len(f), 1, 1)
-            exp1 = np.ones_like(len(f))#(1-np.exp(-2j*np.pi*f*Di*(1+(np.einsum('iab,i->ab', Omega, pi)))/c))
-            exp2 =np.ones_like(len(f))#(1-np.exp(2j*np.pi*f*Dj*(1+(np.einsum('iab,i->ab', Omega, pj)))/c))
+            exp1 =(1-np.exp(-2j*np.pi*f*Di*(1+(np.einsum('iab,i->ab', Omega, pi)))/c))
+            exp2 =(1-np.exp(2j*np.pi*f*Dj*(1+(np.einsum('iab,i->ab', Omega, pj)))/c))
             Fp1 = AngularPatternFunction.F_pulsar(theta, phi, psi, pi)
             Fp2 = AngularPatternFunction.F_pulsar(theta, phi, psi, pj)
             
