@@ -114,26 +114,46 @@ class Observatories:
     # Einstein Telescope (ET) - triangular configuration
 
     def ET_arms(self):
-        xA = np.array([0., 0., 0.])
-        xB = np.array([+1/2., sqrt(3)/2, 0])
-        xC = np.array([-1/2, sqrt(3)/2, 0])
-        lBA = xB - xA
-        lCA = xC - xA
-        lBC = xB - xC
         l = 1e4  # m
-        return xA, xB, xC, lBA, lCA, lBC, l
+        c = np.array([0.751, 0.125, 0.649])* REarth
+        d1 = np.array([0.178, 0.908, -0.381])
+        d2 = np.array([0.462, -0.801, -0.381])
+        d3 = np.array([-0.640, -0.106, 0.761])
+        d = l/2 /cos(np.pi/6)
+
+        v1 = c + d1 * d
+        v2 = c + d2 * d
+        v3 = c + d3 * d
+
+        arm1 = v2 - v1
+        arm2 = v3 - v2
+        arm3 = v1 - v3
+
+        arm1 = arm1 / np.linalg.norm(arm1)
+        arm2 = arm2 / np.linalg.norm(arm2)
+        arm3 = arm3 / np.linalg.norm(arm3)
+
+        return v1, v2, v3, arm1, arm2, arm3, l
 
     def ET_X(self):
-        xA, xB, xC, lBA, lCA, lBC, l= self.ET_arms()
-        return xA * l, lBA, lCA, l, "ET X"
-
+        v1, v2, v3, arm1, arm2, arm3, l = self.ET_arms()
+        xA = arm1
+        xB = -arm3
+        return v1, xA, xB, l, "ET X"
+    
     def ET_Y(self):
-        xA, xB, xC, lBA, lCA, lBC, l = self.ET_arms()
-        return xB * l, -lBC, -lBA, l, "ET Y"
-
+        v1, v2, v3, arm1, arm2, arm3, l = self.ET_arms()
+        xA = -arm1
+        xB = arm2
+        return v2, xA, xB, l, "ET Y"
+    
     def ET_Z(self):
-        xA, xB, xC, lBA, lCA, lBC, l = self.ET_arms()
-        return xC * l, -lCA, lBC, l, "ET Z"
+        v1, v2, v3, arm1, arm2, arm3, l = self.ET_arms()
+        xA = -arm2
+        xB = arm3
+        return v3, xA, xB, l, "ET Z"
+
+
     
     # Einstein Telescope (ET) - L-shaped configuration
 

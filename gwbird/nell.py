@@ -370,8 +370,8 @@ class AngularResponse:
             Omega = Basis.m_n_Omega_basis(theta, phi, psi)[2]
 
             f = f.reshape(len(f), 1, 1)
-            exp1 =(1-np.exp(-2j*np.pi*f*Di*(1+(np.einsum('iab,i->ab', Omega, pi)))/c))
-            exp2 =(1-np.exp(2j*np.pi*f*Dj*(1+(np.einsum('iab,i->ab', Omega, pj)))/c))
+            exp1 = np.ones_like(len(f))#(1-np.exp(-2j*np.pi*f*Di*(1+(np.einsum('iab,i->ab', Omega, pi)))/c))
+            exp2 =np.ones_like(len(f))#(1-np.exp(2j*np.pi*f*Dj*(1+(np.einsum('iab,i->ab', Omega, pj)))/c))
             Fp1 = AngularPatternFunction.F_pulsar(theta, phi, psi, pi)
             Fp2 = AngularPatternFunction.F_pulsar(theta, phi, psi, pj)
             
@@ -406,8 +406,8 @@ class AngularResponse:
             Returns:
             - gamma_ellm: array_like (integral of the angular response function for a pair of pulsar)
             '''
-            theta = np.linspace(0, np.pi, 100)
-            phi = np.linspace(0, 2*np.pi, 100)
+            theta = np.linspace(0, np.pi, 200)
+            phi = np.linspace(0, 2*np.pi, 200)
             Theta, Phi = np.meshgrid(theta, phi) 
             integrand = Rellm_integrand_PTA(ell, m, Theta, Phi, psi, pi, pj, Di, Dj, f, pol)
             integral = np.trapezoid(np.trapezoid(np.sin(Theta) * integrand, theta), phi)
