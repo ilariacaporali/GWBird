@@ -116,9 +116,11 @@ class Observatories:
     def ET_arms(self):
         l = 1e4  # m
         c = np.array([0.751, 0.125, 0.649])* REarth
-        d1 = np.array([0.178, 0.908, -0.381])
-        d2 = np.array([0.462, -0.801, -0.381])
-        d3 = np.array([-0.640, -0.106, 0.761])
+
+        d1 = np.array([-0.640, -0.106, 0.761])
+        d2 = np.array([0.178, 0.908, -0.381])
+        d3 = np.array([0.462, -0.801, -0.381])
+        
         d = l/2 /cos(np.pi/6)
 
         v1 = c + d1 * d
@@ -143,16 +145,15 @@ class Observatories:
     
     def ET_Y(self):
         v1, v2, v3, arm1, arm2, arm3, l = self.ET_arms()
-        xA = -arm1
-        xB = arm2
+        xA = arm2
+        xB = -arm1
         return v2, xA, xB, l, "ET Y"
     
     def ET_Z(self):
         v1, v2, v3, arm1, arm2, arm3, l = self.ET_arms()
-        xA = -arm2
-        xB = arm3
+        xA = arm3
+        xB = -arm2
         return v3, xA, xB, l, "ET Z"
-
 
     
     # Einstein Telescope (ET) - L-shaped configuration

@@ -120,7 +120,7 @@ class TransferFunction:
     def transfer_function(L, l, f, theta, phi, psi):
 
         '''
-        Transfer function to take into account the large antenna limit
+        Transfer function to take into account the antenna limit
     
         Parameters:
         - L: float (arm length)
@@ -271,8 +271,9 @@ class Skymaps:
 
         f_star = c/2/pi
         omega = Basis.m_n_Omega_basis(theta, phi, psi)[2]
-        exp_c1 = np.exp(1j*f/f_star * (np.einsum('iab,i->ab', omega, ec1))) 
-        exp_c2 = np.exp(1j*f/f_star * (np.einsum('iab,i->ab', omega, ec2)))
+        
+        exp_c1 = np.exp(1j*f/f_star * (np.einsum('iab,i->ab', omega, ec1))) # to remove the factor present in the overlap
+        exp_c2 = np.exp(1j*f/f_star * (np.einsum('iab,i->ab', omega, ec2))) # to remove the factor present in the overlap
 
         F1 = np.array(F1)
         F2 = np.array(F2)

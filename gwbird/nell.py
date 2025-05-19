@@ -406,8 +406,8 @@ class AngularResponse:
             Returns:
             - gamma_ellm: array_like (integral of the angular response function for a pair of pulsar)
             '''
-            theta = np.linspace(0, np.pi, 200)
-            phi = np.linspace(0, 2*np.pi, 200)
+            theta = np.linspace(0, np.pi, 400)
+            phi = np.linspace(0, 2*np.pi, 400)
             Theta, Phi = np.meshgrid(theta, phi) 
             integrand = Rellm_integrand_PTA(ell, m, Theta, Phi, psi, pi, pj, Di, Dj, f, pol)
             integral = np.trapezoid(np.trapezoid(np.sin(Theta) * integrand, theta), phi)
@@ -692,16 +692,4 @@ class Sensitivity_ell:
         for i in range(len(f)):
             pls[i] = np.max(Omega[:,i])
         return pls
-
-
-
-
-  
-
-
-
-
-
-
-    
 

@@ -4,7 +4,7 @@ from gwbird import detectors
 from gwbird.skymap import Basis, AngularPatternFunction
 from gwbird.utils import c
 
-from scipy.integrate import dblquad
+from scipy.integrate import simpson
 from scipy.interpolate import griddata
 from scipy.ndimage import gaussian_filter
 import numpy as np
@@ -236,7 +236,7 @@ class Response:
         - f: array_like (Frequency in Hz)
         - pi: array_like (Position of the first pulsar)
         - pj: array_like (Position of the second pulsar)
-        - pol: str (Polarization of the signal, 't' for tensor, 'v' for vector, 's' for scalar, 'I' for intensity, 'V' for circular)
+        - pol: str (Polarization of the signal, 't' for tensor, 'v' for vector, 's' for scalar breathing, 'l' for scalar longitudinal, 'I' for intensity, 'V' for circular)
 
         Return:
         - overlap: array_like (Overlap reduction function between two pulsars)
@@ -253,20 +253,14 @@ class Response:
             - psi: float (Polarization angle in [0, pi])
             - pi: array_like (Position of the first pulsar)
             - pj: array_like (Position of the second pulsar)
-            - pol: str (Polarization of the signal, 't' for tensor, 'v' for vector, 's' for scalar, 'I' for intensity, 'V' for circular)
+            - pol: str (Polarization of the signal, 't' for tensor, 'v' for vector, 's' for scalar breathing, 'l' for scalar longitudinal, 'I' for intensity, 'V' for circular)
 
             Returns:
             - gamma_ij: array_like (Integrand of the overlap reduction function)
 
             '''
             Omega = Basis.m_n_Omega_basis(theta, phi, psi)[2]#.T
-            # dot_Omega_pi = np.einsum('ij,j->i', Omega, pi)  # (Npix,)
-            # dot_Omega_pj = np.einsum('ij,j->i', Omega, pj)  # (Npix,)
 
-            # f = f.reshape(-1, 1)  # shape (Nf, 1)
-
-            # exp1 = (1 - np.exp(-2j * np.pi * f * Di * (1 + dot_Omega_pi) / c))  # shape (Nf, Npix)
-            # exp2 = (1 - np.exp(2j * np.pi * f * Dj * (1 + dot_Omega_pj) / c)) 
             Fp1 = AngularPatternFunction.F_pulsar(theta, phi, psi, pi)
             Fp2 = AngularPatternFunction.F_pulsar(theta, phi, psi, pj)
 
@@ -307,19 +301,21 @@ class Response:
             - pi: array_like (Position of the first pulsar)
             - pj: array_like (Position of the second pulsar)
             - f: array_like (Frequency in Hz)
-            - pol: str (Polarization of the signal, 't' for tensor, 'v' for vector, 's' for scalar, 'I' for intensity, 'V' for circular)
+            - pol: str (Polarization of the signal, 't' for tensor, 'v' for vector, 's' for scalar breathing, 'l' for scalar longitudinal, 'I' for intensity, 'V' for circular)
 
             Returns:
             - integral: array_like (Overlap reduction function between two pulsars)
 
             '''
+        
+            theta = np.linspace(0, np.pi, 400)
+            phi = np.linspace(0, 2*np.pi, 400)
+            Theta, Phi = np.meshgrid(theta, phi) 
 
-            # Meshgrid finale
-            theta = np.linspace(0, np.pi, 200)
-            phi = np.linspace(0, 2*np.pi, 200)
-            Theta, Phi= np.meshgrid(theta, phi)
-            integrand = gamma_integrand(Theta, Phi, psi, f, pi, pj, Di, Dj, pol)
-            integral = np.trapezoid(np.trapezoid(integrand, theta), phi)
+            integrand = gamma_integrand(Theta, Phi, psi, f, pi, pj, Di, Dj, pol) 
+            temp = np.trapezoid(integrand, theta, axis=2)
+            integral = np.trapezoid(temp, phi, axis=1)  # → shape: (N_freq,)
+
             return np.real(integral)
 
         return gamma(pi, pj, Di, Dj, f, pol, psi)
@@ -332,7 +328,7 @@ class Response:
 
         Parameters:
         - f: array_like (Frequency in Hz)
-        - pol: str (Polarization of the signal, 't' for tensor, 'v' for vector, 's' for scalar, 'I' for intensity, 'V' for circular)
+        - pol: str (Polarization of the signal, 't' for tensor, 'v' for vector, 's' for scalar breathing, 'l' for scalar longitudinal, 'I' for intensity, 'V' for circular)
 
         Return:
         - overlap: array_like (Overlap reduction function for a set of pulsars)
@@ -341,6 +337,7 @@ class Response:
         N_pulsar, pulsar_xyz, D = detectors.get_NANOGrav_pulsars()
         
         overlap = np.zeros(len(f))
+
 
         for i in range(N_pulsar):
             for j in range(i +1, N_pulsar):
