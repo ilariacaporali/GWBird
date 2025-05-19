@@ -29,7 +29,7 @@ conda activate myenv
 ```
 3. Install scientific packages
 ```sh
-conda install numpy scipy mpmath matplotlib ipykernel
+conda install numpy scipy mpmath matplotlib glob2 ipykernel
 conda install -c conda-forge healpy
 ```
 4. Install PINT (for pulsar timing analysis) from GitHub
@@ -42,7 +42,7 @@ python -m ipykernel install --user --name=myenv --display-name "Python (myenv)"
 ```
 6. Verify installation
 ```sh
-python -c "import numpy, healpy, scipy, mpmath, matplotlib, pint; print('✅ All packages installed correctly.')"
+python -c "import numpy, healpy, scipy, mpmath, matplotlib, pint, glob; print('✅ All packages installed correctly.')"
 ```
 
 ### Download and Installation
