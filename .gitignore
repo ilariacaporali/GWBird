@@ -11,5 +11,4 @@ dist/
 build/
 examplepaper/
 
-# private example
-example_private.ipynb
+
