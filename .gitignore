@@ -10,5 +10,7 @@ __pycache__/
 dist/
 build/
 examplepaper/
+pta_notebooks/
+
 
 

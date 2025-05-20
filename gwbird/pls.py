@@ -4,7 +4,6 @@ from gwbird import detectors
 from gwbird.detectors import LISA_noise_AET
 from gwbird.overlap import Response
 from gwbird.utils import H0, h
-from scipy.interpolate import CubicSpline, interp1d 
 
 
 '''

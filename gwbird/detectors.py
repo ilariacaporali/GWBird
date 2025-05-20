@@ -5,7 +5,7 @@ from gwbird.utils import REarth
 from gwbird.psd import psd_dir
 from gwbird.NANOGrav import NANOGrav_dir
 from pint.models import get_model
-import glob, os 
+import glob
 
 
 

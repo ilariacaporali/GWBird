@@ -4,15 +4,6 @@ from gwbird import detectors
 from gwbird.skymap import Basis, AngularPatternFunction
 from gwbird.utils import c
 
-from scipy.integrate import simpson
-from scipy.interpolate import griddata
-from scipy.ndimage import gaussian_filter
-import numpy as np
-from scipy.interpolate import RectBivariateSpline
-
-
-
-# overlap reduction function averaged over the sky
 
 '''
 The overlap module contain the following classes and functions:
