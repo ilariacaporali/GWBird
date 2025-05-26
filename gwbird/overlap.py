@@ -298,9 +298,14 @@ class Response:
             - integral: array_like (Overlap reduction function between two pulsars)
 
             '''
+
+            if pol=='V':
+                N = 400
+            else:
+                N = 200
         
-            theta = np.linspace(0, np.pi, 400)
-            phi = np.linspace(0, 2*np.pi, 400)
+            theta = np.linspace(0, np.pi, N)
+            phi = np.linspace(0, 2*np.pi, N)
             Theta, Phi = np.meshgrid(theta, phi) 
 
             integrand = gamma_integrand(Theta, Phi, psi, f, pi, pj, Di, Dj, pol) 

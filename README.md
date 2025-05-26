@@ -45,7 +45,7 @@ python -m ipykernel install --user --name=myenv --display-name "Python (myenv)"
 python -c "import numpy, healpy, scipy, mpmath, matplotlib, pint, glob; print('✅ All packages installed correctly.')"
 ```
 
-### Download and Installation
+### Download and code installation
 
 1. Clone or download this repository to your computer:
 

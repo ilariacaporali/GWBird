@@ -72,8 +72,11 @@ class AngularResponse:
                 return (15 / (4 * pi)) * (F1[4] * np.conj(F2[4])) * sph_harm_val * sqrt(4 * pi) * sin(x)
             elif pol == 'I':
                 return (5 / (8 * pi)) * (F1[0] * np.conj(F2[0]) + F1[1] * np.conj(F2[1])) * sph_harm_val * sqrt(4 * pi) * sin(x)
-            elif pol == 'V':
-                return 1j*(5/(8*pi))*( F1[0]* np.conj( F2[1]) - F1[1] *np.conj(F2[0])) * sph_harm_val * sqrt(4 * pi) * sin(x)
+            elif pol == 'V': 
+                return -1j*(5/(8*pi))*( F1[0]* np.conj( F2[1]) - F1[1] *np.conj(F2[0])) *  sin(x) * sph_harm_val * sqrt(4 * pi)
+            #  -1j*(5/(8*pi))*( F1[0]* np.conj( F2[1]) - F1[1] *np.conj(F2[0])) *sin(x)
+        
+        
             else:
                 raise ValueError('Unknown polarization')
 
@@ -106,8 +109,8 @@ class AngularResponse:
 
             real_part = np.array([mp.mpf(x.real) for row in gamma for x in row])
             imag_part = np.array([mp.mpf(x.imag) for row in gamma for x in row])
-            real_part = np.array(real_part, dtype=np.float64)
-            imag_part = np.array(imag_part, dtype=np.float64)
+            real_part = np.array(real_part, dtype=np.longdouble)
+            imag_part = np.array(imag_part, dtype=np.longdouble)
     
             return real_part + 1j*imag_part
 
@@ -406,8 +409,8 @@ class AngularResponse:
             Returns:
             - gamma_ellm: array_like (integral of the angular response function for a pair of pulsar)
             '''
-            theta = np.linspace(0, np.pi, 400)
-            phi = np.linspace(0, 2*np.pi, 400)
+            theta = np.linspace(0, np.pi, 100)
+            phi = np.linspace(0, 2*np.pi, 100)
             Theta, Phi = np.meshgrid(theta, phi) 
             integrand = Rellm_integrand_PTA(ell, m, Theta, Phi, psi, pi, pj, Di, Dj, f, pol)
             integral = np.trapezoid(np.trapezoid(np.sin(Theta) * integrand, theta), phi)
