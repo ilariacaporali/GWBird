@@ -409,8 +409,12 @@ class AngularResponse:
             Returns:
             - gamma_ellm: array_like (integral of the angular response function for a pair of pulsar)
             '''
-            theta = np.linspace(0, np.pi, 100)
-            phi = np.linspace(0, 2*np.pi, 100)
+            if pol=='V':
+                N = 400
+            else:
+                N = 200
+            theta = np.linspace(0, np.pi, N)
+            phi = np.linspace(0, 2*np.pi, N)
             Theta, Phi = np.meshgrid(theta, phi) 
             integrand = Rellm_integrand_PTA(ell, m, Theta, Phi, psi, pi, pj, Di, Dj, f, pol)
             integral = np.trapezoid(np.trapezoid(np.sin(Theta) * integrand, theta), phi)
