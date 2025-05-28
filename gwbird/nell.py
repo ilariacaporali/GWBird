@@ -481,7 +481,7 @@ class AngularResponse:
 class Sensitivity_ell:
 
 
-    def PLS_ell(det1, det2, ell, f, pol, psi, fref, snr, Tobs, Cl, shift_angle=None, fI=None, PnI=None, fJ=None, PnJ=None):
+    def APLS_ell(det1, det2, ell, f, pol, psi, fref, snr, Tobs, Cl, shift_angle=None, fI=None, PnI=None, fJ=None, PnJ=None):
         """
         Computes PLS_ell for detectors, handling both individual detectors and networks.
 
@@ -631,7 +631,7 @@ class Sensitivity_ell:
 
     
     
-    def PLS_ell_PTA(ell, f, snr, Tobs, Cl, pol, psi):
+    def APLS_ell_PTA(ell, f, snr, Tobs, Cl, pol, psi):
 
         '''
         Compute the power law sensitivity curve for NANOGrav pulsars catalog
