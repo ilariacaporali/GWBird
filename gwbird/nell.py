@@ -337,7 +337,7 @@ class AngularResponse:
             else:
                 raise ValueError('Unknown combination of channels')
 
-    def R_ell_pairwise(ell, pi, pj, Di, Dj, f, pol, psi):
+    def R_ell_pairwise(ell, pi, pj, Di, Dj, f, pol, psi=0):
 
         '''
         Compute the angular response for a pair of pulsars
@@ -390,7 +390,7 @@ class AngularResponse:
             elif pol=='I':
                 gamma_ij = 3* (Fp1[0] * Fp2[0] + Fp1[1] * Fp2[1]) * exp1 * exp2
             elif pol=='V':
-                gamma_ij = -3j* (Fp1[0] * Fp2[1] - Fp1[1] * Fp2[0]) * exp1 * exp2               
+                gamma_ij = -3j* (Fp1[0] * Fp2[1] - Fp1[1] * Fp2[0]) #* exp1 * exp2               
             return gamma_ij *  sph_harm(m, ell, phi, theta)* np.sqrt(4* np.pi)/ (8*np.pi) 
 
         def Rellm_PTA(ell, m, pi, pj, Di, Dj, psi, f, pol):
@@ -410,7 +410,7 @@ class AngularResponse:
             - gamma_ellm: array_like (integral of the angular response function for a pair of pulsar)
             '''
             if pol=='V':
-                N = 400
+                N = 200
             else:
                 N = 200
             theta = np.linspace(0, np.pi, N)
