@@ -346,7 +346,7 @@ def get_NANOGrav_pulsars(): # https://zenodo.org/records/14773896
     - DIST_array: array_like (pulsar distances) # in meters
 
     '''
-
+    rng = np.random.default_rng(42) # sampling the distances from gaussians
     pfiles = glob.glob(NANOGrav_dir+ '/'+'*.par')
     pfiles = [pf for pf in pfiles if not 'gbt' in pf and not 'ao' in pf]
     pnames = [pf[4:pf.index('_PINT')] for pf in pfiles]
@@ -361,10 +361,21 @@ def get_NANOGrav_pulsars(): # https://zenodo.org/records/14773896
         RA[m.PSR.value] = c.ra.deg  
         DEC[m.PSR.value] = c.dec.deg
 
-        if hasattr(m, 'PX') and m.PX.value > 0:  
-            DIST[m.PSR.value] = 1000 / m.PX.value  
+        if hasattr(m, 'PX') and m.PX.value > 0:
+            px_val = m.PX.value
+            px_err = m.PX.uncertainty_value if m.PX.uncertainty_value is not None else 0.0
+
+            if px_err > 0: # sampling due to uncertainty on the distances
+                px_sampled = rng.normal(loc=px_val, scale=px_err)
+            else:
+                px_sampled = px_val
+
+            if px_sampled > 0:
+                DIST[m.PSR.value] = 1000 / px_sampled  # parsec
+            else:
+                DIST[m.PSR.value] = None
         else:
-            DIST[m.PSR.value] = None  
+            DIST[m.PSR.value] = None
 
     # parsec 2 meters
     for psr in DIST.keys():

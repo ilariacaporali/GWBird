@@ -1,8 +1,10 @@
 import numpy as np
+import mpmath as mp
 from numpy import sin, pi
 from gwbird import detectors 
 from gwbird.skymap import Basis, AngularPatternFunction
 from gwbird.utils import c
+mp.dps = 50
 
 
 '''
@@ -87,8 +89,10 @@ class Response:
                     *sin(x)
             
             elif (pol == 's'): # https://arxiv.org/pdf/2105.13197
-                return (15/(4*pi))*\
-                    ( F1[4]* np.conj( F2[4]) ) \
+                k = 0
+                xi = 1/3 * ((1+2*k)/(1+k))
+                return xi * 15/(1+2*k)/(4*pi)*\
+                    ( F1[4]* np.conj( F2[4]) + k*F1[5]*np.conj(F2[5]) ) \
                     * sin(x)
             
             elif (pol =='I'): # https://arxiv.org/pdf/0707.0535
@@ -98,7 +102,7 @@ class Response:
                     *sin(x)
             
             elif(pol=='V'): # https://arxiv.org/pdf/0707.0535
-                return -1j*(5/(8*pi))*\
+                return 1j*(5/(8*pi))*\
                     ( F1[0]* np.conj( F2[1]) \
                     - F1[1] *np.conj(F2[0])) \
                     *sin(x)
@@ -138,7 +142,7 @@ class Response:
             f_values = R_integrand(X, Y, psi, c1, xA1, xB1, l1, c2, xA2, xB2, l2, f, pol) # gamma values
             gamma_x = np.trapezoid(f_values, x_values, axis=1)
             gamma = np.trapezoid(gamma_x, y_values)
-            return np.real(gamma) 
+            return np.array(gamma, dtype=np.float64)
     
 
 
@@ -188,9 +192,9 @@ class Response:
 
         # Special handling for LISA and ET cases
         special_map = {
-            ('LISA A', 'LISA A'): ('LISA X', 'LISA Y', -1),
-            ('LISA E', 'LISA E'): ('LISA X', 'LISA Y', -1),
-            ('LISA T', 'LISA T'): ('LISA X', 'LISA Y', 2),
+            ('LISA A', 'LISA A'): ('LISA X', 'LISA Y', -1.),
+            ('LISA E', 'LISA E'): ('LISA X', 'LISA Y', -1.),
+            ('LISA T', 'LISA T'): ('LISA X', 'LISA Y', 2.),
             ('ET A', 'ET A'): ('ET X', 'ET Y', -1),
             ('ET E', 'ET E'): ('ET X', 'ET Y', -1),
             ('ET T', 'ET T'): ('ET X', 'ET Y', 2)
@@ -250,36 +254,65 @@ class Response:
             - gamma_ij: array_like (Integrand of the overlap reduction function)
 
             '''
-            Omega = Basis.m_n_Omega_basis(theta, phi, psi)[2]#.T
 
+            Omega = Basis.m_n_Omega_basis(theta, phi, psi)[2]
             Fp1 = AngularPatternFunction.F_pulsar(theta, phi, psi, pi)
             Fp2 = AngularPatternFunction.F_pulsar(theta, phi, psi, pj)
 
-            Omega = Basis.m_n_Omega_basis(theta, phi, psi)[2]
+            f = f[:, None, None]  # shape (Nf, 1, 1)
 
-            f = f.reshape(len(f), 1, 1)
 
-            exp1 = (1-np.exp(-2j*np.pi*f*Di*(1+(np.einsum('iab,i->ab', Omega, pi)))/c))
-            exp2 = (1-np.exp(2j*np.pi*f*Dj*(1+(np.einsum('iab,i->ab', Omega, pj)))/c))
+            f = f / 1e-9  # Convert frequency to GHz for consistency with Di and Dj
+            Di = Di / 1e19  # Convert distance to Gpc
+            Dj = Dj / 1e19
+            Di = np.asarray(Di, dtype=np.longdouble)
+            Dj = np.asarray(Dj, dtype=np.longdouble)
+            c = 3e8 / 1e8  # Convert speed of light to km/s
+
+            fDc_i  = f * Di / c *1e2
+            fDc_j = f * Dj / c * 1e2
+
+            phase_i = 2 * np.pi * fDc_i * (1 + np.einsum('iab,i->ab', Omega, pi)) 
+            phase_i = np.asarray(phase_i, dtype=np.longdouble)  
+            phase_j = 2 * np.pi * fDc_j * (1 + np.einsum('iab,i->ab', Omega, pj))
+            phase_j = np.asarray(phase_j, dtype=np.longdouble)
+
+            exp1 = 1 - np.exp(-1j*phase_i) 
+            exp2 = 1 - np.exp(1j*phase_j)
+
+            # exp1 = 1 - (np.cos(phase_i) - 1j * np.sin(phase_i)) 
+            # exp2 = 1 - (np.cos(phase_j) + 1j * np.sin(phase_j)) 
+
+
+
+            pulsarterms = np.asarray(exp1 * exp2, dtype=np.complex128)
+
+            Fp1_0 = np.asarray(Fp1[0], dtype=np.longdouble)
+            Fp1_1 = np.asarray(Fp1[1], dtype=np.longdouble)
+            Fp2_0 = np.asarray(Fp2[0], dtype=np.longdouble)
+            Fp2_1 = np.asarray(Fp2[1], dtype=np.longdouble)
+
+            #print(pulsarterms)
             
+            if np.array_equal(pi, pj):
+                delta = 1
+            else:
+                delta = 0
 
-            if pol == 't':
-                gamma_ij = 3 * (Fp1[0] * np.conj(Fp2[0]) + Fp1[1] * np.conj(Fp2[1])) * (1/(8*np.pi)) * np.sin(theta) * exp1 * exp2
+            if pol == 't' or pol == 'I':
+                gamma_ij = 3 * (Fp1[0] * Fp2[0] + Fp1[1] * Fp2[1]) * (1/(8*np.pi)) * np.sin(theta) * pulsarterms #* (1+delta)
                 return gamma_ij
             elif pol == 'v':
-                gamma_ij = 3 * (Fp1[2] * np.conj(Fp2[2]) + Fp1[3] * np.conj(Fp2[3])) * (1/(8*np.pi)) * np.sin(theta) * exp1 * exp2
+                gamma_ij = 3 * (Fp1[2] * Fp2[2]+ Fp1[3] * Fp2[3]) * (1/(8*np.pi)) * np.sin(theta) * pulsarterms
                 return gamma_ij
             elif pol == 's':
-                gamma_ij = 3 * Fp1[4] * np.conj(Fp2[4]) * (1/(8*np.pi)) * np.sin(theta) * exp1 * exp2
+                gamma_ij = 3 * Fp1[4] * Fp2[4] * (1/(8*np.pi)) * np.sin(theta) * pulsarterms 
                 return gamma_ij
             elif pol == 'l':
-                gamma_ij = 3 * Fp1[5] * np.conj(Fp2[5]) * (1/(8*np.pi)) * np.sin(theta) * exp1 * exp2
-                return gamma_ij
-            elif pol == 'I':
-                gamma_ij = 3 * (Fp1[0] * np.conj(Fp2[0]) + Fp1[1] * np.conj(Fp2[1])) * (1/(8*np.pi)) * np.sin(theta) * exp1 * exp2
+                gamma_ij = 3 * Fp1[5] * np.conj(Fp2[5]) * (1/(8*np.pi)) * np.sin(theta) * pulsarterms
                 return gamma_ij
             elif pol == 'V':
-                gamma_ij = 3j * (Fp1[0] * np.conj(Fp2[1]) - Fp1[1] * np.conj(Fp2[0])) * (1/(8*np.pi)) * np.sin(theta) * exp1 * exp2
+                gamma_ij = 3j* ( Fp1_0 * Fp2_1 - Fp1_1 * Fp2_0) * (1/(8*np.pi)) * np.sin(theta)* pulsarterms
                 return gamma_ij
             else:
                 raise ValueError('Unknown polarization')
@@ -299,20 +332,16 @@ class Response:
 
             '''
 
-            if pol=='V':
-                N = 400
-            else:
-                N = 200
-        
-            theta = np.linspace(0, np.pi, N)
-            phi = np.linspace(0, 2*np.pi, N)
+            N = 200
+
+            epsilon = 1e-8
+            theta = np.linspace(epsilon, np.pi- epsilon, N)
+            phi = np.linspace(epsilon, 2*np.pi- epsilon, N)
             Theta, Phi = np.meshgrid(theta, phi) 
-
             integrand = gamma_integrand(Theta, Phi, psi, f, pi, pj, Di, Dj, pol) 
-            temp = np.trapezoid(integrand, theta, axis=2)
-            integral = np.trapezoid(temp, phi, axis=1)  # → shape: (N_freq,)
-
-            return np.real(integral)
+            temp = np.trapezoid(integrand, phi, axis=1)
+            integral = np.trapezoid(temp, theta, axis=1)
+            return integral
 
         return gamma(pi, pj, Di, Dj, f, pol, psi)
     
@@ -342,3 +371,116 @@ class Response:
         return overlap
     
    
+
+
+    def pairwise_overlap_nopt(f, pi, pj, Di, Dj, pol, psi=0):
+
+            '''
+            Compute the overlap reduction function between two pulsars
+
+            Parameters:
+            - f: array_like (Frequency in Hz)
+            - pi: array_like (Position of the first pulsar)
+            - pj: array_like (Position of the second pulsar)
+            - pol: str (Polarization of the signal, 't' for tensor, 'v' for vector, 's' for scalar breathing, 'l' for scalar longitudinal, 'I' for intensity, 'V' for circular)
+
+            Return:
+            - overlap: array_like (Overlap reduction function between two pulsars)
+            '''
+
+            def gamma_integrand(theta, phi, psi, f, pi, pj, Di, Dj, pol):
+
+                '''
+                Integrand of the overlap reduction function for two pulsars
+
+                Parameters:
+                - theta: array_like (Polar angle in [0, pi])
+                - phi: array_like (Azimuthal angle in [0, 2*pi])
+                - psi: float (Polarization angle in [0, pi])
+                - pi: array_like (Position of the first pulsar)
+                - pj: array_like (Position of the second pulsar)
+                - pol: str (Polarization of the signal, 't' for tensor, 'v' for vector, 's' for scalar breathing, 'l' for scalar longitudinal, 'I' for intensity, 'V' for circular)
+
+                Returns:
+                - gamma_ij: array_like (Integrand of the overlap reduction function)
+
+                '''
+
+                Omega = Basis.m_n_Omega_basis(theta, phi, psi)[2]
+                Fp1 = AngularPatternFunction.F_pulsar(theta, phi, psi, pi)
+                Fp2 = AngularPatternFunction.F_pulsar(theta, phi, psi, pj)
+
+                f = f[:, None, None]  # shape (Nf, 1, 1)
+
+
+                f = f / 1e-9  # Convert frequency to GHz for consistency with Di and Dj
+                Di = Di / 1e19  # Convert distance to Gpc
+                Dj = Dj / 1e19
+                Di = np.asarray(Di, dtype=np.longdouble)
+                Dj = np.asarray(Dj, dtype=np.longdouble)
+                c = 3e8 / 1e8  # Convert speed of light to km/s
+
+                fDc_i  = f * Di / c *1e2
+                fDc_j = f * Dj / c * 1e2
+
+                phase_i = 2 * np.pi * fDc_i * (1 + np.einsum('iab,i->ab', Omega, pi)) 
+                phase_i = np.asarray(phase_i, dtype=np.longdouble)  # Convert to long double for precision
+                phase_j = 2 * np.pi * fDc_j * (1 + np.einsum('iab,i->ab', Omega, pj))
+                phase_j = np.asarray(phase_j, dtype=np.longdouble)
+
+                exp1 = 1 - (np.cos(phase_i) - 1j * np.sin(phase_i)) #1- np.exp(-1j*phase_i)
+                exp2 = 1 - (np.cos(phase_j) + 1j * np.sin(phase_j)) #1- np.exp(1j*phase_j)
+
+                pulsarterms = np.asarray(exp1 * exp2, dtype=np.longdouble)
+
+                #print(pulsarterms)
+                
+                if np.array_equal(pi, pj):
+                    delta = 1
+                else:
+                    delta = 0
+
+                if pol == 't' or pol == 'I':
+                    gamma_ij = 3 * (Fp1[0] * Fp2[0] + Fp1[1] * Fp2[1]) * (1/(8*np.pi)) * np.sin(theta) * np.ones_like(pulsarterms) *(1+delta)
+                    return gamma_ij
+                elif pol == 'v':
+                    gamma_ij = 3 * (Fp1[2] * Fp2[2]+ Fp1[3] * Fp2[3]) * (1/(8*np.pi)) * np.sin(theta) * pulsarterms
+                    return gamma_ij
+                elif pol == 's':
+                    gamma_ij = 3 * Fp1[4] * Fp2[4] * (1/(8*np.pi)) * np.sin(theta) *  np.ones_like(pulsarterms)*(1+delta)
+                    return gamma_ij
+                elif pol == 'l':
+                    gamma_ij = 3 * Fp1[5] * np.conj(Fp2[5]) * (1/(8*np.pi)) * np.sin(theta) * pulsarterms
+                    return gamma_ij
+                elif pol == 'V':
+                    gamma_ij = 3* ( Fp1[0] * Fp2[1] - Fp1[1] * Fp2[0]) * (1/(8*np.pi)) * np.sin(theta)* pulsarterms
+                    return gamma_ij
+                else:
+                    raise ValueError('Unknown polarization')
+
+            def gamma(pi, pj, Di, Dj, f, pol, psi):
+                '''
+                Overlap reduction function between two pulsars
+
+                Parameters:
+                - pi: array_like (Position of the first pulsar)
+                - pj: array_like (Position of the second pulsar)
+                - f: array_like (Frequency in Hz)
+                - pol: str (Polarization of the signal, 't' for tensor, 'v' for vector, 's' for scalar breathing, 'l' for scalar longitudinal, 'I' for intensity, 'V' for circular)
+
+                Returns:
+                - integral: array_like (Overlap reduction function between two pulsars)
+
+                '''
+                N = 400
+
+                epsilon = 1e-5
+                theta = np.linspace(epsilon, np.pi- epsilon, N)
+                phi = np.linspace(epsilon, 2*np.pi- epsilon, N)
+                Theta, Phi = np.meshgrid(theta, phi) 
+                integrand = gamma_integrand(Theta, Phi, psi, f, pi, pj, Di, Dj, pol) 
+                temp = np.trapezoid(integrand, phi, axis=1)
+                integral = np.trapezoid(temp, theta, axis=1)
+                return np.real(integral)
+
+            return gamma(pi, pj, Di, Dj, f, pol, psi)

@@ -69,7 +69,9 @@ class AngularResponse:
             elif pol == 'v':
                 return (5 / (8 * pi)) * (F1[2] * np.conj(F2[2]) + F1[3] * np.conj(F2[3])) * sph_harm_val * sqrt(4 * pi) * sin(x)
             elif pol == 's':
-                return (15 / (4 * pi)) * (F1[4] * np.conj(F2[4])) * sph_harm_val * sqrt(4 * pi) * sin(x)
+                k = 0
+                xi = 1/3 * ((1+2*k)/(1+k))
+                return (xi * 15/(1+2*k)/(4*pi))*(F1[4] * np.conj(F2[4]) +  k*F1[5]*np.conj(F2[5])) * sph_harm_val * sqrt(4 * pi) * sin(x)
             elif pol == 'I':
                 return (5 / (8 * pi)) * (F1[0] * np.conj(F2[0]) + F1[1] * np.conj(F2[1])) * sph_harm_val * sqrt(4 * pi) * sin(x)
             elif pol == 'V': 
@@ -373,11 +375,11 @@ class AngularResponse:
             Omega = Basis.m_n_Omega_basis(theta, phi, psi)[2]
 
             f = f.reshape(len(f), 1, 1)
-            exp1 =(1-np.exp(-2j*np.pi*f*Di*(1+(np.einsum('iab,i->ab', Omega, pi)))/c))
-            exp2 =(1-np.exp(2j*np.pi*f*Dj*(1+(np.einsum('iab,i->ab', Omega, pj)))/c))
+            exp1 =np.real(1-np.exp(-2j*np.pi*f*Di*(1+(np.einsum('iab,i->ab', Omega, pi)))/c))
+            exp2 =np.real(1-np.exp(2j*np.pi*f*Dj*(1+(np.einsum('iab,i->ab', Omega, pj)))/c))
             Fp1 = AngularPatternFunction.F_pulsar(theta, phi, psi, pi)
             Fp2 = AngularPatternFunction.F_pulsar(theta, phi, psi, pj)
-            
+
 
             if pol=='t':
                 gamma_ij = 3* (Fp1[0] * np.conj(Fp2[0]) + Fp1[1] * np.conj(Fp2[1])  ) * exp1 * exp2
@@ -386,11 +388,11 @@ class AngularResponse:
             elif pol=='s':
                 gamma_ij = 3* (Fp1[4] * Fp2[4]) * exp1 * exp2
             elif pol=='l':
-                gamma_ij = 3* (Fp1[4] * Fp2[4]) * exp1 * exp2
+                gamma_ij = 3* (Fp1[5] * Fp2[5]) * exp1 * exp2
             elif pol=='I':
                 gamma_ij = 3* (Fp1[0] * Fp2[0] + Fp1[1] * Fp2[1]) * exp1 * exp2
             elif pol=='V':
-                gamma_ij = -3j* (Fp1[0] * Fp2[1] - Fp1[1] * Fp2[0]) * exp1 * exp2               
+                gamma_ij = 3j* (Fp1[0] * Fp2[1] - Fp1[1] * Fp2[0]) * exp1 * exp2               
             return gamma_ij *  sph_harm(m, ell, phi, theta)* np.sqrt(4* np.pi)/ (8*np.pi) 
 
         def Rellm_PTA(ell, m, pi, pj, Di, Dj, psi, f, pol):
@@ -410,11 +412,12 @@ class AngularResponse:
             - gamma_ellm: array_like (integral of the angular response function for a pair of pulsar)
             '''
             if pol=='V':
-                N = 200
+                N = 400
             else:
                 N = 200
-            theta = np.linspace(0, np.pi, N)
-            phi = np.linspace(0, 2*np.pi, N)
+            eps = 1e-5
+            theta = np.linspace(eps, np.pi- eps, N)
+            phi = np.linspace(eps, 2*np.pi-eps, N)
             Theta, Phi = np.meshgrid(theta, phi) 
             integrand = Rellm_integrand_PTA(ell, m, Theta, Phi, psi, pi, pj, Di, Dj, f, pol)
             integral = np.trapezoid(np.trapezoid(np.sin(Theta) * integrand, theta), phi)
@@ -441,12 +444,129 @@ class AngularResponse:
             Returns:
             - gamma_ell: array_like (angular response for a pair of pulsar)
             '''
-            gamma_l = 0
-            for m in range(-ell, ell+1):
-                gamma_l += np.abs(Rellm_PTA(ell, m, pi, pj, Di, Dj, psi, f, pol))**2
-            return np.sqrt(gamma_l) 
+            if ell==0:
+                return np.abs(np.real(Rellm_PTA(0, 0, pi, pj, Di, Dj, psi, f, pol)))
+            
+            else:
+                gamma_l = 0
+                for m in range(-ell, ell+1):
+                    gamma_l += np.abs(Rellm_PTA(ell, m, pi, pj, Di, Dj, psi, f, pol))**2
+                return np.sqrt(gamma_l) 
 
         return Rell_func_PTA(ell, pi, pj, Di, Dj, f, psi, pol)   
+    
+
+    def R_ell_pairwise_nopt(ell, pi, pj, Di, Dj, f, pol, psi=0):
+
+        '''
+        Compute the angular response for a pair of pulsars
+
+        Parameters:
+        - ell: int (multipole to consider)
+        - pi: len(3) array_like (pulsar i position in the xyz coordinates)
+        - pj: len(3) array_like (pulsar j position in the xyz coordinates)
+        - f: array_like (frequency in Hz)
+        - pol: str (polarization: 't' for tensor, 'v' for vector, 's' for scalar, 'I' for intensity, 'V' for circular polarization)
+
+        Returns:
+        angular response: angular response for a pair of pulsars
+        '''
+
+
+
+        def Rellm_integrand_PTA(ell, m, theta, phi, psi, pi, pj, Di, Dj, f, pol):
+            '''
+            Compute the integrand of the angular response function for a pair of pulsar
+
+            Parameters:
+            - ell: int (multipole to consider)
+            - m: int (azimuthal number)
+            - theta: array_like (polar angle in radians)
+            - phi: array_like (azimuthal angle in radians)
+            - psi: float (polarization angle in radians)
+            - pi: len(3) array_like (pulsar i position in the xyz coordinates)
+            - pj: len(3) array_like (pulsar j position in the xyz coordinates)
+            - pol: str (polarization: 't' for tensor, 'v' for vector, 's' for scalar, 'I' for intensity, 'V' for circular polarization)
+            '''
+
+            Omega = Basis.m_n_Omega_basis(theta, phi, psi)[2]
+
+            f = f.reshape(len(f), 1, 1)
+            exp1 =np.real(1-np.exp(-2j*np.pi*f*Di*(1+(np.einsum('iab,i->ab', Omega, pi)))/c))
+            exp2 =np.real(1-np.exp(2j*np.pi*f*Dj*(1+(np.einsum('iab,i->ab', Omega, pj)))/c))
+            Fp1 = AngularPatternFunction.F_pulsar(theta, phi, psi, pi)
+            Fp2 = AngularPatternFunction.F_pulsar(theta, phi, psi, pj)
+
+
+            if pol=='t' or pol=='I':
+                gamma_ij = 3* (Fp1[0] * np.conj(Fp2[0]) + Fp1[1] * np.conj(Fp2[1])  ) * np.ones_like(exp1) 
+            elif pol=='v':
+                gamma_ij = 3* (Fp1[2] * Fp2[2] + Fp1[3] * Fp2[3]) * exp1 * exp2
+            elif pol=='s':
+                gamma_ij = 3* (Fp1[4] * Fp2[4]) * np.ones_like(exp1)
+            elif pol=='l':
+                gamma_ij = 3* (Fp1[5] * Fp2[5]) * exp1 * exp2
+            elif pol=='V':
+                gamma_ij = 3j* (Fp1[0] * Fp2[1] - Fp1[1] * Fp2[0]) * np.ones_like(exp1)  
+            return gamma_ij *  sph_harm(m, ell, phi, theta)* np.sqrt(4* np.pi)/ (8*np.pi) 
+
+        def Rellm_PTA(ell, m, pi, pj, Di, Dj, psi, f, pol):
+            '''
+            Compute the integral of the angular response function for a pair of pulsar
+
+            Parameters:
+            - ell: int (multipole to consider)
+            - m: int (azimuthal number)
+            - pi: len(3) array_like (pulsar i position in the xyz coordinates)
+            - pj: len(3) array_like (pulsar j position in the xyz coordinates)
+            - f: array_like (frequency in Hz)
+            - psi: float (polarization angle in radians)
+            - pol: str (polarization: 't' for tensor, 'v' for vector, 's' for scalar, 'I' for intensity, 'V' for circular polarization)
+
+            Returns:
+            - gamma_ellm: array_like (integral of the angular response function for a pair of pulsar)
+            '''
+            N = 200
+            eps = 1e-5
+            theta = np.linspace(eps, np.pi- eps, N)
+            phi = np.linspace(eps, 2*np.pi-eps, N)
+            Theta, Phi = np.meshgrid(theta, phi) 
+            integrand = Rellm_integrand_PTA(ell, m, Theta, Phi, psi, pi, pj, Di, Dj, f, pol)
+            integral = np.trapezoid(np.trapezoid(np.sin(Theta) * integrand, theta), phi)
+            return integral
+        
+        # uncomment this line to use the Rellm_PTA function
+            # (you will have to add the m value by hand in Rellm_PTA function)
+        # m = your_m_value
+        #return Rellm_PTA(ell,m,  pi, pj, Di, Dj, psi,f, pol)
+
+        # comment the following lines to use the Rellm_PTA function
+        
+        def Rell_func_PTA(ell, pi, pj, Di, Dj, f, psi, pol):
+            '''
+            Compute the angular response for a pair of pulsar
+
+            Parameters:
+            - ell: int (multipole to consider)
+            - pi: len(3) array_like (pulsar i position in the xyz coordinates)
+            - pj: len(3) array_like (pulsar j position in the xyz coordinates)
+            - f: array_like (frequency in Hz)
+            - pol: str (polarization: 't' for tensor, 'v' for vector, 's' for scalar, 'I' for intensity, 'V' for circular polarization)
+
+            Returns:
+            - gamma_ell: array_like (angular response for a pair of pulsar)
+            '''
+            if ell==0:
+                return np.abs(np.real(Rellm_PTA(0, 0, pi, pj, Di, Dj, psi, f, pol)))
+            
+            else:
+                gamma_l = 0
+                for m in range(-ell, ell+1):
+                    gamma_l += np.abs(Rellm_PTA(ell, m, pi, pj, Di, Dj, psi, f, pol))**2
+                return np.sqrt(gamma_l) 
+
+        return Rell_func_PTA(ell, pi, pj, Di, Dj, f, psi, pol)   
+    
     
 
             

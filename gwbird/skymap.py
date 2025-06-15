@@ -49,12 +49,12 @@ class Basis:
             -np.sin(theta)
         ], axis=0) 
         
-        v = np.stack([
-            np.sin(phi), 
-            -np.cos(phi), 
-            np.zeros_like(theta)
-        ], axis=0)  
 
+        v = np.stack([
+            -np.sin(phi), 
+            np.cos(phi), 
+            np.zeros_like(theta)
+        ], axis=0) 
 
         Omega = np.stack([
             np.cos(phi) * np.sin(theta),
@@ -72,7 +72,7 @@ class Basis:
         Parameters:
         - theta: float/array_like (polar angle in [0, pi])
         - phi: float/array_like (azimuthal angle in [0, 2pi])
-        - psi: float/array_like (polarization angle in [0, pi])
+        - psi: float/array_like (polarization angle in [-pi/2, pi/2])
 
         Returns:
         - m, n, Omega: array_like (orthonormal basis)
@@ -80,8 +80,8 @@ class Basis:
 
         u, v, Omega = Basis.u_v_Omega_basis(theta, phi)
 
-        m = np.cos(psi) * u - np.sin(psi) * v
-        n = np.sin(psi) * u + np.cos(psi) * v
+        m = np.cos(psi) * u + np.sin(psi) * v
+        n = -np.sin(psi) * u + np.cos(psi) * v
         Omega = Omega
 
         return m, n, Omega
@@ -96,7 +96,7 @@ class PolarizationTensors:
         Parameters:
         - theta: float/array_like (polar angle in [0, pi])
         - phi: float/array_like (azimuthal angle in [0, 2pi])
-        - psi: float/array_like (polarization angle in [0, pi])
+        - psi: float/array_like (polarization angle in [-pi/2, pi/2])
 
         Returns:
         - e_plus, e_cross, e_x, e_y, e_b, e_l: array_like (polarization tensors)
@@ -108,7 +108,7 @@ class PolarizationTensors:
         e_x = np.einsum('i...,k...',m,Omega)+np.einsum('i...,k...',Omega,m)
         e_y = np.einsum('i...,k...',n,Omega)+np.einsum('i...,k...',Omega,n)
         e_b = np.einsum('i...,k...',m,m)+np.einsum('i...,k...',n,n)
-        e_l = np.einsum('i...,k...',Omega,Omega) * sqrt(2)
+        e_l = np.einsum('i...,k...',Omega,Omega) #* sqrt(2)
 
         return e_plus, e_cross, e_x, e_y, e_b, e_l
     
@@ -127,7 +127,7 @@ class TransferFunction:
         - f: array_like (frequency)
         - theta: float/array_like (polar angle in [0, pi])
         - phi: float/array_like (azimuthal angle in [0, 2pi])
-        - psi: float/array_like (polarization angle in [0, pi])
+        - psi: float/array_like (polarization angle in [-pi/2, pi/2])
 
         Returns:
         - transfer function: (array_like)
@@ -154,7 +154,7 @@ class AngularPatternFunction:
         Parameters:
         - theta: float/array_like (polar angle in [0, pi])
         - phi: float/array_like (azimuthal angle in [0, 2pi])
-        - psi: float/array_like (polarization angle in [0, pi])
+        - psi: float/array_like (polarization angle in [-pi/2, pi/2])
         - ce: array_like (vector pointing towards the detector location)
         - e1: array_like (unit vector of the detector arm 1)
         - e2: array_like (unit vector of the detector arm 2)
@@ -189,7 +189,7 @@ class AngularPatternFunction:
         Parameters:
         - theta: float/array_like (polar angle in [0, pi])
         - phi: float/array_like (azimuthal angle in [0, 2pi])
-        - psi: float/array_like (polarization angle in [0, pi])
+        - psi: float/array_like (polarization angle in [-pi/2, pi/2])
         - p: array_like (unit vector pointing towards the pulsar)
 
         Returns:
@@ -231,7 +231,7 @@ class Skymaps:
             - l: float (Length of the arm in meters)
             - name: str (Name of the detector)
         - f: array_like (frequency)
-        - psi: float/array_like (polarization angle in [0, pi])
+        - psi: float/array_like (polarization angle in [-pi/2, pi/2])
         - pol: str (polarization type: 't', 'v', 's, 'I', 'V')
         - nside: int (Healpix resolution parameter)
         - shift_angle: float (angle to rotate the detector, only for ET 2L)
