@@ -341,7 +341,7 @@ class Response:
             integrand = gamma_integrand(Theta, Phi, psi, f, pi, pj, Di, Dj, pol) 
             temp = np.trapezoid(integrand, phi, axis=1)
             integral = np.trapezoid(temp, theta, axis=1)
-            return integral
+            return np.real(integral)
 
         return gamma(pi, pj, Di, Dj, f, pol, psi)
     
