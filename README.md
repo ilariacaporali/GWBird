@@ -9,7 +9,7 @@ GWBird is a Python package that allows computing the response and sensitivity of
 
 
 <p align='center'>
-   <img src='logo.png' alt='logo' width='210'>
+   <img src='GWBirdlogo.png' alt='logo' width='210'>
 </p>
 
 ## Installation
