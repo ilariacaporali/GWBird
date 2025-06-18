@@ -613,7 +613,7 @@ def PLS_PTA(f, snr, Tobs, pol, psi):
 
     '''
 
-    N, p, d= detectors.get_NANOGrav_pulsars()
+    N, p, D = detectors.get_NANOGrav_pulsars()
 
     def PTA_Pn():
 
@@ -638,7 +638,7 @@ def PLS_PTA(f, snr, Tobs, pol, psi):
         N = len(p)
         for i in range(N):
             for j in range(i+1, N):
-                s +=  Response.overlap_pairwise(f, p[i], p[j], d[i], d[j], pol, psi)**2 
+                s +=  Response.overlap_pairwise(f, p[i], p[j], D[i], D[j], pol, psi)**2 
 
         return 2 * np.pi * np.pi * f**3 / np.sqrt(s/(PTA_Sn(f)* PTA_Sn(f))) / (3* ((H0/h)**2))
     

@@ -698,7 +698,7 @@ class Sensitivity_ell:
         - pls: array_like (power law sensitivity curve  (h^2 \Omega_{GW}(f))
         '''
 
-        _, p, d = det.get_NANOGrav_pulsars()
+        N, p, D = det.get_NANOGrav_pulsars()
         
         def PTA_Pn():
             DT = (365*24*3600)/20 # s
@@ -715,10 +715,9 @@ class Sensitivity_ell:
             Returns the effective energy density of the PTA
             '''
             s = 0
-            N = len(p)
             for i in range(N):
                 for j in range(i+1, N): 
-                    s +=  AngularResponse.R_ell_pairwise(ell, p[i], p[j], d[i], d[j], f, pol, psi)**2 
+                    s +=  AngularResponse.R_ell_pairwise(ell, p[i], p[j], D[i], D[j], f, pol, psi)**2 
 
             return 2 * np.pi * np.pi * f**3 / np.sqrt(s/(PTA_Sn(f)* PTA_Sn(f))) / (3* ((H0/h)**2))
         
