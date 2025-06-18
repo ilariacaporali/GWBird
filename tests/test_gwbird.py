@@ -10,7 +10,7 @@ def test_skymaps():
 
 def test_Response():
     f = np.logspace(0, 3, 100)
-    R_ET2L45 = Response.overlap('ET L1', 'ET L2', f, 0, 't', shift_angle=np.pi/4)
+    R_ET2L45 = Response.overlap('ET L1', 'ET L2', f, 't', 0, shift_angle=np.pi/4)
 
 def test_Response_PTA():
     f = np.logspace(-9, -7, 100)
