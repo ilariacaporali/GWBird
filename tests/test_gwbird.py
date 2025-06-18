@@ -6,7 +6,7 @@ from gwbird.overlap import Response
 from gwbird import pls
 
 def test_skymaps():
-    mapHL = Skymaps.AntennaPattern('LIGO H', 'LIGO L', 10, 0, 't')
+    mapHL = Skymaps.antennapattern('LIGO H', 'LIGO L', 10, 0, 't')
 
 def test_Response():
     f = np.logspace(0, 3, 100)

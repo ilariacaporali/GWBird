@@ -210,7 +210,7 @@ class AngularPatternFunction:
 
 class Skymaps:
 
-    def AntennaPattern(det1, det2, f, psi, pol, nside=32, shift_angle=None):
+    def antennapattern(det1, det2, f, psi, pol, nside=32, shift_angle=None):
             
         '''
         Antenna pattern function: detector response to an incoming GW signal

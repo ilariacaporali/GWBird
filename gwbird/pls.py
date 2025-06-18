@@ -175,9 +175,9 @@ def PLS(det1, det2, f, fref, pol, snr, Tobs, psi, shift_angle=False, fI=None, Pn
 
         psd_A = psd_E = psd_T = np.interp(f, fI, PnI)
 
-        R_AA = Response.overlap('ET A', 'ET A', f, psi, pol)
-        R_EE = Response.overlap('ET E', 'ET E', f, psi, pol)
-        R_TT = Response.overlap('ET T', 'ET T', f, psi, pol)
+        R_AA = Response.overlap('ET A', 'ET A', f, pol, psi)
+        R_EE = Response.overlap('ET E', 'ET E', f, pol, psi)
+        R_TT = Response.overlap('ET T', 'ET T', f, pol, psi)
 
         _, Omega_A = all_Omega_GW(f, fref, snr, Tobs, R_AA, psd_A, psd_A)
         _, Omega_E = all_Omega_GW(f, fref, snr, Tobs, R_EE, psd_E, psd_E)
@@ -196,9 +196,9 @@ def PLS(det1, det2, f, fref, pol, snr, Tobs, psi, shift_angle=False, fI=None, Pn
         psd_E = LISA_noise_AET(f, 'E')
         psd_T = LISA_noise_AET(f, 'T')
 
-        R_AA = Response.overlap('LISA A', 'LISA A', f, psi, pol)
-        R_EE = Response.overlap('LISA E', 'LISA E', f, psi, pol)
-        R_TT = Response.overlap('LISA T', 'LISA T', f, psi, pol)
+        R_AA = Response.overlap('LISA A', 'LISA A', f, pol, psi)
+        R_EE = Response.overlap('LISA E', 'LISA E', f, pol, psi)
+        R_TT = Response.overlap('LISA T', 'LISA T', f, pol, psi)
 
         _, Omega_A = all_Omega_GW(f, fref, snr, Tobs, R_AA, psd_A, psd_A)
         _, Omega_E = all_Omega_GW(f, fref, snr, Tobs, R_EE, psd_E, psd_E)
@@ -223,7 +223,7 @@ def PLS(det1, det2, f, fref, pol, snr, Tobs, psi, shift_angle=False, fI=None, Pn
         PnI = np.interp(f, fI, PnI)
         PnJ = np.interp(f, fJ, PnJ)
         
-        orfIJ = overlap.Response.overlap(det1, det2, f, psi, pol, shift_angle)
+        orfIJ = overlap.Response.overlap(det1, det2, f,  pol, psi, shift_angle)
         beta, Omega = all_Omega_GW(f, fref, snr, Tobs, orfIJ, PnI, PnJ)
 
         pls = np.max(Omega, axis=0)
@@ -284,12 +284,12 @@ def PLS_2pol(det1, det2, det3, f, fref, pol, snr, Tobs, psi, shift_angle=None, f
     PnK = np.interp(f, fK, PnK)
 
 
-    orf_12_t = overlap.Response.overlap(det1, det2, f, psi , 't', shift_angle )
-    orf_13_x = overlap.Response.overlap(det1, det3, f, psi , pol, shift_angle )
-    orf_13_t = overlap.Response.overlap(det1, det3, f, psi , 't', shift_angle )
-    orf_12_x = overlap.Response.overlap(det1, det2, f, psi , pol, shift_angle )
+    orf_12_t = overlap.Response.overlap(det1, det2, f, 't', psi, shift_angle )
+    orf_13_x = overlap.Response.overlap(det1, det3, f, pol, psi, shift_angle )
+    orf_13_t = overlap.Response.overlap(det1, det3, f, 't', psi, shift_angle )
+    orf_12_x = overlap.Response.overlap(det1, det2, f, pol, psi, shift_angle )
 
-    orfIJK = orf_12_t * orf_13_x - orf_13_t * orf_12_x
+    #orfIJK = orf_12_t * orf_13_x - orf_13_t * orf_12_x
 
     def S_eff(orf_12_t, orf_13_x, orf_13_t, orf_12_x,  Ni, Nj, Nk):
         '''
@@ -442,17 +442,17 @@ def PLS_3pol(det1, det2, det3, f, fref, pol, snr, Tobs, psi, shift_angle=None, f
     PnK = np.interp(f, fK, PnK)
 
 
-    orf_12_t = overlap.Response.overlap(det1, det2, f, psi , 't', shift_angle )
-    orf_23_t = overlap.Response.overlap(det2, det3, f, psi , 't', shift_angle )
-    orf_31_t = overlap.Response.overlap(det1, det3, f, psi , 't', shift_angle )
+    orf_12_t = overlap.Response.overlap(det1, det2, f, 't', psi , shift_angle )
+    orf_23_t = overlap.Response.overlap(det2, det3, f, 't', psi , shift_angle )
+    orf_31_t = overlap.Response.overlap(det1, det3, f, 't', psi , shift_angle )
 
-    orf_12_v = overlap.Response.overlap(det1, det2, f, psi , 'v', shift_angle )
-    orf_23_v = overlap.Response.overlap(det2, det3, f, psi , 'v', shift_angle )
-    orf_31_v = overlap.Response.overlap(det1, det3, f, psi , 'v', shift_angle )
+    orf_12_v = overlap.Response.overlap(det1, det2, f, 'v', psi , shift_angle )
+    orf_23_v = overlap.Response.overlap(det2, det3, f, 'v', psi , shift_angle )
+    orf_31_v = overlap.Response.overlap(det1, det3, f, 'v', psi , shift_angle )
 
-    orf_12_s = overlap.Response.overlap(det1, det2, f, psi , 's', shift_angle )
-    orf_23_s = overlap.Response.overlap(det2, det3, f, psi , 's', shift_angle )
-    orf_31_s = overlap.Response.overlap(det1, det3, f, psi , 's', shift_angle )
+    orf_12_s = overlap.Response.overlap(det1, det2, f, 's', psi , shift_angle )
+    orf_23_s = overlap.Response.overlap(det2, det3, f, 's', psi , shift_angle )
+    orf_31_s = overlap.Response.overlap(det1, det3, f, 's', psi , shift_angle )
 
     orfIJK = orf_12_t * ( orf_23_s * orf_31_v - orf_31_s * orf_23_v) + \
                 orf_23_t * ( orf_31_s * orf_12_v - orf_12_s * orf_31_v) + \
@@ -638,7 +638,7 @@ def PLS_PTA(f, snr, Tobs, pol, psi):
         N = len(p)
         for i in range(N):
             for j in range(i+1, N):
-                s +=  Response.pairwise_overlap(f, p[i], p[j], d[i], d[j], pol, psi)**2 
+                s +=  Response.overlap_pairwise(f, p[i], p[j], d[i], d[j], pol, psi)**2 
 
         return 2 * np.pi * np.pi * f**3 / np.sqrt(s/(PTA_Sn(f)* PTA_Sn(f))) / (3* ((H0/h)**2))
     

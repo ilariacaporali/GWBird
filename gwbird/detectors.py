@@ -267,9 +267,9 @@ def detector_Pn(det_name):
         'ET Y':   'ET_Sh_coba.txt', # Coba
         'ET Z':   'ET_Sh_coba.txt', # Coba
         'CE':     'ce1.txt', # https://dcc.ligo.org/LIGO-T1500293/public
-        'LISA X': 'lisa_noise.txt', # A channel 
-        'LISA Y': 'lisa_noise.txt', # A channel
-        'LISA Z': 'lisa_noise.txt'  # A channel
+        'LISA X': 'lisa_noise.txt',  
+        'LISA Y': 'lisa_noise.txt', 
+        'LISA Z': 'lisa_noise.txt' 
     }
 
     if det_name.startswith('ET L'):
@@ -383,7 +383,6 @@ def get_NANOGrav_pulsars(): # https://zenodo.org/records/14773896
             DIST[psr] *= 3.086e16
 
     # ra dec 2  theta phi 
-
     theta_pulsar = np.deg2rad(90.0 - np.array(list(DEC.values())))
     phi_pulsar = np.deg2rad(list(RA.values()))
 

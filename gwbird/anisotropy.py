@@ -24,7 +24,21 @@ class AngularResponse:
 
         Parameters:
         - ell: int (Multipole to consider)
-        - det1, det2: str or list of str (Detector names)
+        - det1, det2: str or list of str
+            The name of the detector(s) to consider.
+            The names must be in the list of detectors available in the response module.
+            The list of available detectors can be obtained by calling the function detectors.available_detectors().
+            The names of the detectors are case sensitive.
+            If you want to provide a custom detector, you can provide the following information in a list:
+
+            H = [c, xA, xB, l, name]
+
+            - c: array_like of length 3 (Position of the detector in the Earth-centered frame in meters)
+            - xA: array_like of length 3 (Unit vector pointing towards the detector in the Earth-centered frame)
+            - xB: array_like of length 3 (Unit vector pointing towards the detector in the Earth-centered frame)
+            - l: float (Length of the arm in meters)
+            - name: str (Name of the detector)
+            
         - f: array_like (Frequency in Hz)
         - pol: str (Polarization: 't' for tensor, 'v' for vector, 's' for scalar)
         - psi: float (Polarization angle in radians)
@@ -34,7 +48,7 @@ class AngularResponse:
         - R_ell: array_like (Angular response function)
         '''
 
-        def Rellm_integrand(ell, m, x, y, psi, c1, u1, v1, c2, u2, v2, f, pol, L1, L2):
+        def Rellm_integrand(ell, m, theta, phi, psi, c1, u1, v1, c2, u2, v2, f, pol, L1, L2):
             
             '''
             Integrand of the anisotropic response function
@@ -42,8 +56,8 @@ class AngularResponse:
             Parameters:
             - ell: int (Multipole to consider)
             - m: int (Azimuthal number)
-            - x: array_like (theta in radians [0, pi])
-            - y: array_like (phi in radians [0, 2*pi])
+            - theta: array_like (theta in radians [0, pi])
+            - phi: array_like (phi in radians [0, 2*pi])
             - psi: float (Polarization angle in radians)
             - c1, u1, v1: array_like (Detector 1 position parameters)
             - c2, u2, v2: array_like (Detector 2 position parameters)
@@ -57,30 +71,26 @@ class AngularResponse:
             '''
 
 
-            f = f.reshape(len(f), 1, 1)
+            f = f[:, None, None] 
             
-            F1 = AngularPatternFunction.F(x, y, psi, c1, u1, v1, f, L1)
-            F2 = AngularPatternFunction.F(x, y, psi, c2, u2, v2, f, L2)
+            F1 = AngularPatternFunction.F(theta, phi, psi, c1, u1, v1, f, L1)
+            F2 = AngularPatternFunction.F(theta, phi, psi, c2, u2, v2, f, L2)
 
-            sph_harm_val = sph_harm(m, ell, y, x)
+            sph_harm_val = sph_harm(m, ell, phi, theta)
 
-            if pol == 't':
-                return (5 / (8 * pi)) * (F1[0] * np.conj(F2[0]) + F1[1] * np.conj(F2[1])) * sph_harm_val * sqrt(4 * pi) * sin(x)
+            if pol == 't' or pol == 'I':
+                gamma_ij = (5 / (8 * pi)) * (F1[0] * np.conj(F2[0]) + F1[1] * np.conj(F2[1])) * sph_harm_val * sqrt(4 * pi) * sin(theta)
             elif pol == 'v':
-                return (5 / (8 * pi)) * (F1[2] * np.conj(F2[2]) + F1[3] * np.conj(F2[3])) * sph_harm_val * sqrt(4 * pi) * sin(x)
+                gamma_ij = (5 / (8 * pi)) * (F1[2] * np.conj(F2[2]) + F1[3] * np.conj(F2[3])) * sph_harm_val * sqrt(4 * pi) * sin(theta)
             elif pol == 's':
                 k = 0
                 xi = 1/3 * ((1+2*k)/(1+k))
-                return (xi * 15/(1+2*k)/(4*pi))*(F1[4] * np.conj(F2[4]) +  k*F1[5]*np.conj(F2[5])) * sph_harm_val * sqrt(4 * pi) * sin(x)
-            elif pol == 'I':
-                return (5 / (8 * pi)) * (F1[0] * np.conj(F2[0]) + F1[1] * np.conj(F2[1])) * sph_harm_val * sqrt(4 * pi) * sin(x)
+                gamma_ij = (xi * 15/(1+2*k)/(4*pi))*(F1[4] * np.conj(F2[4]) +  k*F1[5]*np.conj(F2[5])) * sph_harm_val * sqrt(4 * pi) * sin(theta)
             elif pol == 'V': 
-                return -1j*(5/(8*pi))*( F1[0]* np.conj( F2[1]) - F1[1] *np.conj(F2[0])) *  sin(x) * sph_harm_val * sqrt(4 * pi)
-            #  -1j*(5/(8*pi))*( F1[0]* np.conj( F2[1]) - F1[1] *np.conj(F2[0])) *sin(x)
-        
-        
+                gamma_ij = 1j*(5/(8*pi))*( F1[0]* np.conj( F2[1]) - F1[1] *np.conj(F2[0])) *  sin(theta) * sph_harm_val * sqrt(4 * pi)
             else:
                 raise ValueError('Unknown polarization')
+            return gamma_ij
 
         def Rellm(ell, m, u1, v1, c1, u2, v2, c2, psi, f, pol, L1, L2):
             
@@ -101,13 +111,13 @@ class AngularResponse:
             - Rellm: array_like (Integral of the anisotropic response function)
             '''
 
-            x_values = np.linspace(0, pi, 100)
-            y_values = np.linspace(0, 2*pi, 100)
-            X, Y = np.meshgrid(x_values,y_values) 
-            f_values = Rellm_integrand(ell, m, X, Y, psi, c1, u1, v1, c2, u2, v2, f, pol, L1, L2)
+            N = 100
+            theta = np.linspace(0, np.pi, N)
+            phi = np.linspace(0, 2*np.pi, N)
+            Theta, Phi = np.meshgrid(theta, phi)
+            integrand = Rellm_integrand(ell, m, Theta, Phi, psi, c1, u1, v1, c2, u2, v2, f, pol, L1, L2)
 
-            gamma_x = np.trapezoid(f_values, x_values.reshape(1, 100, 1), axis=1)
-            gamma = np.trapezoid(gamma_x, y_values.reshape(1, 1, 100))
+            gamma = np.trapezoid(np.trapezoid(integrand,theta, axis=1), phi.reshape(1, 1, 100))
 
             real_part = np.array([mp.mpf(x.real) for row in gamma for x in row])
             imag_part = np.array([mp.mpf(x.imag) for row in gamma for x in row])
@@ -339,7 +349,7 @@ class AngularResponse:
             else:
                 raise ValueError('Unknown combination of channels')
 
-    def R_ell_pairwise(ell, pi, pj, Di, Dj, f, pol, psi=0):
+    def R_ell_pairwise(ell, f, pi, pj, Di, Dj, pol, psi=0):
 
         '''
         Compute the angular response for a pair of pulsars
@@ -350,52 +360,77 @@ class AngularResponse:
         - pj: len(3) array_like (pulsar j position in the xyz coordinates)
         - f: array_like (frequency in Hz)
         - pol: str (polarization: 't' for tensor, 'v' for vector, 's' for scalar, 'I' for intensity, 'V' for circular polarization)
+        - psi: float, optional (Polarization angle in radians (default is 0))
 
         Returns:
-        angular response: angular response for a pair of pulsars
+        - angular_response: array_like (angular response for a pair of pulsar)
         '''
 
 
 
-        def Rellm_integrand_PTA(ell, m, theta, phi, psi, pi, pj, Di, Dj, f, pol):
+        def Rellm_integrand_PTA(ell, m, theta, phi, psi, f, pi, pj, Di, Dj, pol):
             '''
             Compute the integrand of the angular response function for a pair of pulsar
 
             Parameters:
             - ell: int (multipole to consider)
-            - m: int (azimuthal number)
-            - theta: array_like (polar angle in radians)
-            - phi: array_like (azimuthal angle in radians)
-            - psi: float (polarization angle in radians)
-            - pi: len(3) array_like (pulsar i position in the xyz coordinates)
-            - pj: len(3) array_like (pulsar j position in the xyz coordinates)
-            - pol: str (polarization: 't' for tensor, 'v' for vector, 's' for scalar, 'I' for intensity, 'V' for circular polarization)
+            - m: int 
+            - theta: array_like (Polar angle in [0, pi])
+            - phi: array_like (Azimuthal angle in [0, 2*pi])
+            - psi: float (Polarization angle in [0, pi])
+            - f: array_like (Frequency in Hz)
+            - pi: array_like (Position of the first pulsar)
+            - pj: array_like (Position of the second pulsar)
+            - Di: float (Distance to the first pulsar)
+            - Dj: float (Distance to the second pulsar)
+            - pol: str (Polarization of the signal, 't' for tensor, 'v' for vector, 's' for scalar breathing, 'l' for scalar longitudinal, 'I' for intensity, 'V' for circular)
+
+            Returns:
+            - gamma_ij: array_like (Integrand of the angular overlap reduction function for a pair of pulsar)
+
             '''
 
             Omega = Basis.m_n_Omega_basis(theta, phi, psi)[2]
+            Fi = AngularPatternFunction.F_pulsar(theta, phi, psi, pi)
+            Fj = AngularPatternFunction.F_pulsar(theta, phi, psi, pj)
 
-            f = f.reshape(len(f), 1, 1)
-            exp1 =np.real(1-np.exp(-2j*np.pi*f*Di*(1+(np.einsum('iab,i->ab', Omega, pi)))/c))
-            exp2 =np.real(1-np.exp(2j*np.pi*f*Dj*(1+(np.einsum('iab,i->ab', Omega, pj)))/c))
-            Fp1 = AngularPatternFunction.F_pulsar(theta, phi, psi, pi)
-            Fp2 = AngularPatternFunction.F_pulsar(theta, phi, psi, pj)
+            f = f[:, None, None]  # shape (Nf, 1, 1)
 
+            f = f / 1e-9  
+            Di = Di / 1e19  
+            Dj = Dj / 1e19
+            Di = np.asarray(Di, dtype=np.longdouble)
+            Dj = np.asarray(Dj, dtype=np.longdouble)
+            c = 3e8 / 1e8  #
 
-            if pol=='t':
-                gamma_ij = 3* (Fp1[0] * np.conj(Fp2[0]) + Fp1[1] * np.conj(Fp2[1])  ) * exp1 * exp2
+            fDc_i  = f * Di / c *1e2
+            fDc_j = f * Dj / c * 1e2
+
+            phase_i = 2 * np.pi * fDc_i * (1 + np.einsum('iab,i->ab', Omega, pi)) 
+            phase_i = np.asarray(phase_i, dtype=np.longdouble)  
+            phase_j = 2 * np.pi * fDc_j * (1 + np.einsum('iab,i->ab', Omega, pj))
+            phase_j = np.asarray(phase_j, dtype=np.longdouble)
+
+            exp1 = 1 - np.exp(-1j*phase_i) 
+            exp2 = 1 - np.exp(1j*phase_j)
+
+            pulsarterms = np.asarray(exp1 * exp2, dtype=np.float64)
+
+            if pol=='t' or pol == 'I':
+                gamma_ij = 3* (Fi[0] * Fj[0] + Fi[1] * Fj[1])  *  sph_harm(m, ell, phi, theta)* np.sqrt(4* np.pi)/ (8*np.pi) * pulsarterms
             elif pol=='v':
-                gamma_ij = 3* (Fp1[2] * Fp2[2] + Fp1[3] * Fp2[3]) * exp1 * exp2
+                gamma_ij = 3* (Fi[2] * Fj[2] + Fi[3] * Fj[3])  *  sph_harm(m, ell, phi, theta)* np.sqrt(4* np.pi)/ (8*np.pi) * pulsarterms
             elif pol=='s':
-                gamma_ij = 3* (Fp1[4] * Fp2[4]) * exp1 * exp2
+                gamma_ij = 3* (Fi[4] * Fj[4] )  *  sph_harm(m, ell, phi, theta)* np.sqrt(4* np.pi)/ (8*np.pi) * pulsarterms
             elif pol=='l':
-                gamma_ij = 3* (Fp1[5] * Fp2[5]) * exp1 * exp2
-            elif pol=='I':
-                gamma_ij = 3* (Fp1[0] * Fp2[0] + Fp1[1] * Fp2[1]) * exp1 * exp2
+                gamma_ij = 3* (Fi[5] * Fj[5]) *  sph_harm(m, ell, phi, theta)* np.sqrt(4* np.pi)/ (8*np.pi) * pulsarterms
             elif pol=='V':
-                gamma_ij = 3j* (Fp1[0] * Fp2[1] - Fp1[1] * Fp2[0]) * exp1 * exp2               
-            return gamma_ij *  sph_harm(m, ell, phi, theta)* np.sqrt(4* np.pi)/ (8*np.pi) 
+                gamma_ij = 3j* ((Fi[0] * Fj[1] - Fi[1] * Fj[0]) ) * sph_harm(m, ell, phi, theta)* np.sqrt(4* np.pi)/ (8*np.pi) *  pulsarterms
+            else:
+                raise ValueError('Unknown polarization')            
+            return gamma_ij 
 
-        def Rellm_PTA(ell, m, pi, pj, Di, Dj, psi, f, pol):
+        def Rellm_PTA(ell, m, pi, pj, Di, Dj, f, pol, psi):
             '''
             Compute the integral of the angular response function for a pair of pulsar
 
@@ -404,134 +439,22 @@ class AngularResponse:
             - m: int (azimuthal number)
             - pi: len(3) array_like (pulsar i position in the xyz coordinates)
             - pj: len(3) array_like (pulsar j position in the xyz coordinates)
+            - Di: float (distance to the first pulsar)
+            - Dj: float (distance to the second pulsar)
             - f: array_like (frequency in Hz)
+            - pol: str (polarization: 't' for tensor, 'v' for vector, 's' for scalar, 'I' for intensity, 'V' for circular polarization)
             - psi: float (polarization angle in radians)
-            - pol: str (polarization: 't' for tensor, 'v' for vector, 's' for scalar, 'I' for intensity, 'V' for circular polarization)
-
-            Returns:
-            - gamma_ellm: array_like (integral of the angular response function for a pair of pulsar)
-            '''
-            if pol=='V':
-                N = 400
-            else:
-                N = 200
-            eps = 1e-5
-            theta = np.linspace(eps, np.pi- eps, N)
-            phi = np.linspace(eps, 2*np.pi-eps, N)
-            Theta, Phi = np.meshgrid(theta, phi) 
-            integrand = Rellm_integrand_PTA(ell, m, Theta, Phi, psi, pi, pj, Di, Dj, f, pol)
-            integral = np.trapezoid(np.trapezoid(np.sin(Theta) * integrand, theta), phi)
-            return integral
-        
-        # uncomment this line to use the Rellm_PTA function
-            # (you will have to add the m value by hand in Rellm_PTA function)
-        # m = your_m_value
-        #return Rellm_PTA(ell,m,  pi, pj, Di, Dj, psi,f, pol)
-
-        # comment the following lines to use the Rellm_PTA function
-        
-        def Rell_func_PTA(ell, pi, pj, Di, Dj, f, psi, pol):
-            '''
-            Compute the angular response for a pair of pulsar
-
-            Parameters:
-            - ell: int (multipole to consider)
-            - pi: len(3) array_like (pulsar i position in the xyz coordinates)
-            - pj: len(3) array_like (pulsar j position in the xyz coordinates)
-            - f: array_like (frequency in Hz)
-            - pol: str (polarization: 't' for tensor, 'v' for vector, 's' for scalar, 'I' for intensity, 'V' for circular polarization)
-
-            Returns:
-            - gamma_ell: array_like (angular response for a pair of pulsar)
-            '''
-            if ell==0:
-                return np.abs(np.real(Rellm_PTA(0, 0, pi, pj, Di, Dj, psi, f, pol)))
             
-            else:
-                gamma_l = 0
-                for m in range(-ell, ell+1):
-                    gamma_l += np.abs(Rellm_PTA(ell, m, pi, pj, Di, Dj, psi, f, pol))**2
-                return np.sqrt(gamma_l) 
-
-        return Rell_func_PTA(ell, pi, pj, Di, Dj, f, psi, pol)   
-    
-
-    def R_ell_pairwise_nopt(ell, pi, pj, Di, Dj, f, pol, psi=0):
-
-        '''
-        Compute the angular response for a pair of pulsars
-
-        Parameters:
-        - ell: int (multipole to consider)
-        - pi: len(3) array_like (pulsar i position in the xyz coordinates)
-        - pj: len(3) array_like (pulsar j position in the xyz coordinates)
-        - f: array_like (frequency in Hz)
-        - pol: str (polarization: 't' for tensor, 'v' for vector, 's' for scalar, 'I' for intensity, 'V' for circular polarization)
-
-        Returns:
-        angular response: angular response for a pair of pulsars
-        '''
-
-
-
-        def Rellm_integrand_PTA(ell, m, theta, phi, psi, pi, pj, Di, Dj, f, pol):
-            '''
-            Compute the integrand of the angular response function for a pair of pulsar
-
-            Parameters:
-            - ell: int (multipole to consider)
-            - m: int (azimuthal number)
-            - theta: array_like (polar angle in radians)
-            - phi: array_like (azimuthal angle in radians)
-            - psi: float (polarization angle in radians)
-            - pi: len(3) array_like (pulsar i position in the xyz coordinates)
-            - pj: len(3) array_like (pulsar j position in the xyz coordinates)
-            - pol: str (polarization: 't' for tensor, 'v' for vector, 's' for scalar, 'I' for intensity, 'V' for circular polarization)
-            '''
-
-            Omega = Basis.m_n_Omega_basis(theta, phi, psi)[2]
-
-            f = f.reshape(len(f), 1, 1)
-            exp1 =np.real(1-np.exp(-2j*np.pi*f*Di*(1+(np.einsum('iab,i->ab', Omega, pi)))/c))
-            exp2 =np.real(1-np.exp(2j*np.pi*f*Dj*(1+(np.einsum('iab,i->ab', Omega, pj)))/c))
-            Fp1 = AngularPatternFunction.F_pulsar(theta, phi, psi, pi)
-            Fp2 = AngularPatternFunction.F_pulsar(theta, phi, psi, pj)
-
-
-            if pol=='t' or pol=='I':
-                gamma_ij = 3* (Fp1[0] * np.conj(Fp2[0]) + Fp1[1] * np.conj(Fp2[1])  ) * np.ones_like(exp1) 
-            elif pol=='v':
-                gamma_ij = 3* (Fp1[2] * Fp2[2] + Fp1[3] * Fp2[3]) * exp1 * exp2
-            elif pol=='s':
-                gamma_ij = 3* (Fp1[4] * Fp2[4]) * np.ones_like(exp1)
-            elif pol=='l':
-                gamma_ij = 3* (Fp1[5] * Fp2[5]) * exp1 * exp2
-            elif pol=='V':
-                gamma_ij = 3j* (Fp1[0] * Fp2[1] - Fp1[1] * Fp2[0]) * np.ones_like(exp1)  
-            return gamma_ij *  sph_harm(m, ell, phi, theta)* np.sqrt(4* np.pi)/ (8*np.pi) 
-
-        def Rellm_PTA(ell, m, pi, pj, Di, Dj, psi, f, pol):
-            '''
-            Compute the integral of the angular response function for a pair of pulsar
-
-            Parameters:
-            - ell: int (multipole to consider)
-            - m: int (azimuthal number)
-            - pi: len(3) array_like (pulsar i position in the xyz coordinates)
-            - pj: len(3) array_like (pulsar j position in the xyz coordinates)
-            - f: array_like (frequency in Hz)
-            - psi: float (polarization angle in radians)
-            - pol: str (polarization: 't' for tensor, 'v' for vector, 's' for scalar, 'I' for intensity, 'V' for circular polarization)
-
             Returns:
             - gamma_ellm: array_like (integral of the angular response function for a pair of pulsar)
             '''
+
             N = 200
-            eps = 1e-5
+            eps = 1e-8
             theta = np.linspace(eps, np.pi- eps, N)
             phi = np.linspace(eps, 2*np.pi-eps, N)
             Theta, Phi = np.meshgrid(theta, phi) 
-            integrand = Rellm_integrand_PTA(ell, m, Theta, Phi, psi, pi, pj, Di, Dj, f, pol)
+            integrand = Rellm_integrand_PTA(ell, m, Theta, Phi, psi, f, pi, pj, Di, Dj, pol)
             integral = np.trapezoid(np.trapezoid(np.sin(Theta) * integrand, theta), phi)
             return integral
         
@@ -542,35 +465,42 @@ class AngularResponse:
 
         # comment the following lines to use the Rellm_PTA function
         
-        def Rell_func_PTA(ell, pi, pj, Di, Dj, f, psi, pol):
+        def Rell_func_PTA(ell, f, pi, pj, Di, Dj, pol, psi):
             '''
             Compute the angular response for a pair of pulsar
 
             Parameters:
             - ell: int (multipole to consider)
+            - f: array_like (frequency in Hz)
             - pi: len(3) array_like (pulsar i position in the xyz coordinates)
             - pj: len(3) array_like (pulsar j position in the xyz coordinates)
-            - f: array_like (frequency in Hz)
+            - Di: float (distance to the first pulsar)
+            - Dj: float (distance to the second pulsar)
             - pol: str (polarization: 't' for tensor, 'v' for vector, 's' for scalar, 'I' for intensity, 'V' for circular polarization)
+            - psi: float (polarization angle in radians)
 
             Returns:
             - gamma_ell: array_like (angular response for a pair of pulsar)
             '''
-            if ell==0:
-                return np.abs(np.real(Rellm_PTA(0, 0, pi, pj, Di, Dj, psi, f, pol)))
+            # if ell==0:
+            #     return np.abs(np.real(Rellm_PTA(0, 0, pi, pj, Di, Dj, psi, f, pol)))
             
-            else:
-                gamma_l = 0
-                for m in range(-ell, ell+1):
-                    gamma_l += np.abs(Rellm_PTA(ell, m, pi, pj, Di, Dj, psi, f, pol))**2
-                return np.sqrt(gamma_l) 
+            # else:
+            #     gamma_l = 0
+            #     for m in range(-ell, ell+1):
+            #         gamma_l += np.abs(Rellm_PTA(ell, m, pi, pj, Di, Dj, psi, f, pol))**2
+            #     return np.sqrt(gamma_l) 
 
-        return Rell_func_PTA(ell, pi, pj, Di, Dj, f, psi, pol)   
-    
+            gamma_l = 0
+            for m in range(-ell, ell+1):
+                gamma_l += np.abs(Rellm_PTA(ell, m, pi, pj, Di, Dj, f, pol, psi))**2
+            return np.sqrt(gamma_l) 
+
+        return Rell_func_PTA(ell, f, pi, pj, Di, Dj, pol, psi)   
     
 
-            
-    def R_ell_PTA(ell, f, pol, psi):
+  
+    def R_ell_PTA(ell, f, pol, psi=0):
 
         '''
         Compute the overlap reduction function for a set of pulsars
@@ -579,19 +509,19 @@ class AngularResponse:
         - ell: int (multipole to consider)
         - f: array_like (frequency in Hz)
         - pol: str (polarization: 't' for tensor, 'v' for vector, 's' for scalar, 'I' for intensity, 'V' for circular polarization)
-        - psi: float (polarization angle in radians)
+        - psi: float, optional (Polarization angle in radians (default is 0))
 
         Returns:
         - angular response:  array_like (angular response for a set of pulsars)
         '''
 
-        N_pulsar, pulsar_xyz, DIST_array = det.get_NANOGrav_pulsars()
+        N, p, D = det.get_NANOGrav_pulsars()
         
         angular_response = np.zeros(len(f))
 
-        for i in range(N_pulsar):
-            for j in range(i +1, N_pulsar):
-                angular_response += AngularResponse.R_ell_pairwise(ell, pulsar_xyz[i], pulsar_xyz[j],  DIST_array[i],  DIST_array[j], f, pol, psi)
+        for i in range(N):
+            for j in range(i+1, N):
+                angular_response += AngularResponse.R_ell_pairwise(ell, f, p[i], p[j],  D[i],  D[j], pol, psi)
                 
         return angular_response 
 
