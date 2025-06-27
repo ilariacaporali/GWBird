@@ -18,7 +18,7 @@ setup(
 
     ],
     author="Ilaria Caporali, Angelo Ricciardone",
-    description="A package for gravitational wave background analysis",
+    description="A package for gravitational wave background characterization",
     url="https://github.com/ilariacaporali/GWBird/tree/master",
     classifiers=[
         "Programming Language :: Python :: 3",
