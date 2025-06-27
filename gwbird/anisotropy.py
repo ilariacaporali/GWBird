@@ -44,7 +44,7 @@ class AngularResponse:
         - psi: float (Polarization angle in radians)
         - shift_angle: bool or float, optional (Shift angle for ET detectors)
 
-        Returns:
+        Return:
         - R_ell: array_like (Angular response function)
         '''
 
@@ -66,7 +66,7 @@ class AngularResponse:
             - L1: float (Detector 1 arm length)
             - L2: float (Detector 2 arm length)
             
-            Returns:
+            Return:
             - integrand: array_like (Integrand of the anisotropic response function)
             '''
 
@@ -107,7 +107,7 @@ class AngularResponse:
             - pol: str (Polarization: 't' for tensor, 'v' for vector, 's' for scalar, 'I' for intensity, 'V' for circular polarization)
             - L1: float
 
-            Returns:
+            Return:
             - Rellm: array_like (Integral of the anisotropic response function)
             '''
 
@@ -190,7 +190,7 @@ class AngularResponse:
                 - L2: float (Detector 2 arm length)
                 - psi: float (Polarization angle in radians)
 
-                Returns:
+                Return:
                 - R_AA_ell: array_like (Angular response for the AA channel in the AET basis)
                 '''
                 total = 0
@@ -213,7 +213,7 @@ class AngularResponse:
                 - L2: float (Detector 2 arm length)
                 - psi: float (Polarization angle in radians)
 
-                Returns:
+                Return:
                 - R_TT_ell: array_like (Angular response for the TT channel in the AET basis)
                 '''
                 total = 0
@@ -259,7 +259,7 @@ class AngularResponse:
                 - L2: float (Detector 2 arm length)
                 - psi: float (Polarization angle in radians)
 
-                Returns:
+                Return:
                 - R_AT_ell: array_like (Angular response for the AT channel in the AET basis)
                 '''
                 total = 0
@@ -306,7 +306,7 @@ class AngularResponse:
                 - L2: float (Detector 2 arm length)
                 - psi: float (Polarization angle in radians)
 
-                Returns:
+                Return:
                 - R_AE_ell: array_like (Angular response for the AE channel in the AET basis)
                 '''
                 m_values = np.arange(-ell, ell+1)
@@ -329,7 +329,7 @@ class AngularResponse:
                 - L2: float (Detector 2 arm length)
                 - psi: float (Polarization angle in radians)
 
-                Returns:
+                Return:
                 - R_AT_ell: array_like (Angular response for the AT channel in the AET basis)
                 '''
                 m_values = np.arange(-ell, ell+1)
@@ -362,7 +362,7 @@ class AngularResponse:
         - pol: str (polarization: 't' for tensor, 'v' for vector, 's' for scalar, 'I' for intensity, 'V' for circular polarization)
         - psi: float, optional (Polarization angle in radians (default is 0))
 
-        Returns:
+        Return:
         - angular_response: array_like (angular response for a pair of pulsar)
         '''
 
@@ -385,7 +385,7 @@ class AngularResponse:
             - Dj: float (Distance to the second pulsar)
             - pol: str (Polarization of the signal, 't' for tensor, 'v' for vector, 's' for scalar breathing, 'l' for scalar longitudinal, 'I' for intensity, 'V' for circular)
 
-            Returns:
+            Return:
             - gamma_ij: array_like (Integrand of the angular overlap reduction function for a pair of pulsar)
 
             '''
@@ -445,7 +445,7 @@ class AngularResponse:
             - pol: str (polarization: 't' for tensor, 'v' for vector, 's' for scalar, 'I' for intensity, 'V' for circular polarization)
             - psi: float (polarization angle in radians)
             
-            Returns:
+            Return:
             - gamma_ellm: array_like (integral of the angular response function for a pair of pulsar)
             '''
 
@@ -479,24 +479,16 @@ class AngularResponse:
             - pol: str (polarization: 't' for tensor, 'v' for vector, 's' for scalar, 'I' for intensity, 'V' for circular polarization)
             - psi: float (polarization angle in radians)
 
-            Returns:
+            Return:
             - gamma_ell: array_like (angular response for a pair of pulsar)
             '''
-            # if ell==0:
-            #     return np.abs(np.real(Rellm_PTA(0, 0, pi, pj, Di, Dj, psi, f, pol)))
-            
-            # else:
-            #     gamma_l = 0
-            #     for m in range(-ell, ell+1):
-            #         gamma_l += np.abs(Rellm_PTA(ell, m, pi, pj, Di, Dj, psi, f, pol))**2
-            #     return np.sqrt(gamma_l) 
 
             gamma_l = 0
             for m in range(-ell, ell+1):
                 gamma_l += np.abs(Rellm_PTA(ell, m, pi, pj, Di, Dj, f, pol, psi))**2
             return np.sqrt(gamma_l) 
 
-        return Rell_func_PTA(ell, f, pi, pj, Di, Dj, pol, psi)   
+        return np.real(Rell_func_PTA(ell, f, pi, pj, Di, Dj, pol, psi))   
     
 
   
@@ -511,7 +503,7 @@ class AngularResponse:
         - pol: str (polarization: 't' for tensor, 'v' for vector, 's' for scalar, 'I' for intensity, 'V' for circular polarization)
         - psi: float, optional (Polarization angle in radians (default is 0))
 
-        Returns:
+        Return:
         - angular response:  array_like (angular response for a set of pulsars)
         '''
 
@@ -551,8 +543,8 @@ class Sensitivity_ell:
         - shift_angle (float, optional): Shift angle.
         - fI, PnI, fJ, PnJ (array, optional): Frequency and noise power spectral density for custom detectors.
         
-        Returns:
-        - pls (array_like): power law sensitivity curve  (h^2 \Omega_{GW}(f))
+        Return:
+        - pls: array_like (power law sensitivity curve  (h^2 \Omega_{GW}(f)))
         """
 
         def Omega_eff_ell(det1, det2, Rl, f, fI=None, PnI=None, fJ=None, PnJ=None):
@@ -566,7 +558,7 @@ class Sensitivity_ell:
             - f (array): Frequency array.
             - fI, PnI, fJ, PnJ (array, optional): Frequency and noise power spectral density for custom detectors.
 
-            Returns:
+            Return:
             - array: Effective Omega_eff_ell.
             """
 
@@ -593,7 +585,7 @@ class Sensitivity_ell:
             - beta (float): Beta parameter.
             - Omega_eff_l (array): Effective Omega_eff_ell.
             
-            Returns:
+            Return:
             - array: Omega_beta.
             """
 
@@ -614,7 +606,7 @@ class Sensitivity_ell:
             - beta (float): Beta parameter.
             - Omega_eff_l (array): Effective Omega_eff_ell.
 
-            Returns:
+            Return:
             - array: Omega_GW.
             """
             return Omega_beta(f, fref, snr, Tobs, beta, Omega_eff_l) * (f/fref)**beta
@@ -630,7 +622,7 @@ class Sensitivity_ell:
             - Tobs (float): Observation time in years.
             - Omega_eff_l (array): Effective Omega_eff_ell.
 
-            Returns:
+            Return:
             - array: All Omega_GW curves.
             """
 

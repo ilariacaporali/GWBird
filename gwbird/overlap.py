@@ -43,6 +43,9 @@ class Response:
         - psi: float (Polarization angle in radians)
         - shift_angle: float (Shift the angle of the response if considering ET 2L in radians)
 
+        Return:
+        - overlap: array_like (Overlap reduction function between the two detectors)
+
         """
 
         def overlap_integrand(theta, phi, psi, c1, xA1, xB1, l1, c2, xA2, xB2, l2, f, pol):
@@ -189,7 +192,7 @@ class Response:
         
         
         # General case    
-        return np.array(overlap_func(xA1, xB1, c1, l1, xA2, xB2, c2, l2, psi, f, pol))
+        return np.real(overlap_func(xA1, xB1, c1, l1, xA2, xB2, c2, l2, psi, f, pol))
     
 
     # pulsar timing array
@@ -225,7 +228,7 @@ class Response:
             - pj: array_like (Position of the second pulsar)
             - pol: str (Polarization of the signal, 't' for tensor, 'v' for vector, 's' for scalar breathing, 'l' for scalar longitudinal, 'I' for intensity, 'V' for circular)
 
-            Returns:
+            Return:
             - gamma_ij: array_like (Integrand of the overlap reduction function)
 
             '''
@@ -283,7 +286,7 @@ class Response:
             - pol: str (Polarization of the signal, 't' for tensor, 'v' for vector, 's' for scalar breathing, 'l' for scalar longitudinal, 'I' for intensity, 'V' for circular)
             - psi: float, optional (Polarization angle in radians, default is 0)
 
-            Returns:
+            Return:
             - integral: array_like (Overlap reduction function between two pulsars)
 
             '''

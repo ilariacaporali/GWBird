@@ -39,7 +39,7 @@ class Basis:
         - theta: float/array_like (polar angle in [0, pi])
         - phi: float/array_like (azimuthal angle in [0, 2pi])
 
-        Returns:
+        Return:
         - u, v, Omega: array_like (orthonormal basis)
         '''
         
@@ -74,7 +74,7 @@ class Basis:
         - phi: float/array_like (azimuthal angle in [0, 2pi])
         - psi: float/array_like (polarization angle in [-pi/2, pi/2])
 
-        Returns:
+        Return:
         - m, n, Omega: array_like (orthonormal basis)
         '''
 
@@ -98,7 +98,7 @@ class PolarizationTensors:
         - phi: float/array_like (azimuthal angle in [0, 2pi])
         - psi: float/array_like (polarization angle in [-pi/2, pi/2])
 
-        Returns:
+        Return:
         - e_plus, e_cross, e_x, e_y, e_b, e_l: array_like (polarization tensors)
         '''
 
@@ -129,7 +129,7 @@ class TransferFunction:
         - phi: float/array_like (azimuthal angle in [0, 2pi])
         - psi: float/array_like (polarization angle in [-pi/2, pi/2])
 
-        Returns:
+        Return:
         - transfer function: (array_like)
         '''
 
@@ -192,7 +192,7 @@ class AngularPatternFunction:
         - psi: float/array_like (polarization angle in [-pi/2, pi/2])
         - p: array_like (unit vector pointing towards the pulsar)
 
-        Returns:
+        Return:
         - F_plus, F_cross, F_x, F_y, F_b, F_l: array_like (angular pattern function)
         '''
         Omega = Basis.m_n_Omega_basis(theta, phi, psi)[2]
@@ -236,7 +236,7 @@ class Skymaps:
         - nside: int (Healpix resolution parameter)
         - shift_angle: float (angle to rotate the detector, only for ET 2L)
 
-        Returns:
+        Return:
         - selected_map: array_like (Antenna pattern Function map)
 
         '''

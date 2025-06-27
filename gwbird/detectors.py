@@ -31,7 +31,7 @@ class Rotations:
         - angle: float (angle of rotation (radians))
         - axis: array_like (axis of rotation (unitary vector))
 
-        Returns: 
+        Return: 
         - rotated vector: array_like
         """
         axis = axis / np.linalg.norm(axis)
@@ -47,7 +47,7 @@ class Rotations:
         - vec1: array_like (first vector)
         - vec2: array_like (second vector)
 
-        Returns:
+        Return:
         - angle: float (angle between the two vectors)
         """
         return np.arccos(np.clip(np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2)), -1.0, 1.0))
@@ -60,7 +60,7 @@ class Rotations:
         - vec1: array_like (first vector)
         - vec2: array_like (second vector)
 
-        Returns:
+        Return:
         - perpendicular vector: array_like
         """
         return np.cross(vec1, vec2)
@@ -253,8 +253,19 @@ def available_detectors():
 
 def detector_Pn(det_name):
     """
-    Method to return the PSD of the observatories
+    Method to return the PSD of the detectors
+
+    Parameters:
+    - det: str 
+        The name of the detector to consider.
+        The names must be in the list of detectors available.
+        The list of available detectors can be obtained by calling the function ```detectors.available_detectors()```.
+        The names of the detectors are case sensitive.
+
+    Return:
+    - f_PSD, PSD : array_like, array_like
     """
+
     base_path = psd_dir  # path to the PSD files # aggiungere referenze
     file_map = {
         'LIGO H': 'aligo_design.txt', # https://dcc.ligo.org/LIGO-T1500293/public
@@ -340,7 +351,7 @@ def get_NANOGrav_pulsars(): # https://zenodo.org/records/14773896
     '''
     Function to get the pulsar data from the NANOGrav dataset
 
-    Returns:
+    Return:
     - N_pulsar: int (number of pulsars)
     - pulsar_xyz: array_like (pulsar coordinates)
     - DIST_array: array_like (pulsar distances) # in meters
