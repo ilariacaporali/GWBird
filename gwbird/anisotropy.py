@@ -349,7 +349,7 @@ class AngularResponse:
             else:
                 raise ValueError('Unknown combination of channels')
 
-    def R_ell_pairwise(ell, f, pi, pj, Di, Dj, pol, psi=0):
+    def R_ell_pairwise(ell, f, pi, pj, Di, Dj, pol, psi):
 
         '''
         Compute the angular response for a pair of pulsars
@@ -360,7 +360,7 @@ class AngularResponse:
         - pj: len(3) array_like (pulsar j position in the xyz coordinates)
         - f: array_like (frequency in Hz)
         - pol: str (polarization: 't' for tensor, 'v' for vector, 's' for scalar, 'I' for intensity, 'V' for circular polarization)
-        - psi: float, optional (Polarization angle in radians (default is 0))
+        - psi: float, optional (Polarization angle in radians)
 
         Return:
         - angular_response: array_like (angular response for a pair of pulsar)
@@ -492,7 +492,7 @@ class AngularResponse:
     
 
   
-    def R_ell_PTA(ell, f, pol, psi=0):
+    def R_ell_PTA(ell, f, pol, psi):
 
         '''
         Compute the overlap reduction function for a set of pulsars
@@ -501,7 +501,7 @@ class AngularResponse:
         - ell: int (multipole to consider)
         - f: array_like (frequency in Hz)
         - pol: str (polarization: 't' for tensor, 'v' for vector, 's' for scalar, 'I' for intensity, 'V' for circular polarization)
-        - psi: float, optional (Polarization angle in radians (default is 0))
+        - psi: float, optional (Polarization angle in radians)
 
         Return:
         - angular response:  array_like (angular response for a set of pulsars)

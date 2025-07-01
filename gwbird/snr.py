@@ -3,7 +3,7 @@ from gwbird import detectors
 from gwbird.overlap import Response
 from gwbird.utils import H0
 
-def SNR(Tobs, f, gw_params, detectors_list, pol, psi=0, shift_angle=None, gw_spectrum_func=None):
+def SNR(Tobs, f, gw_params, detectors_list, pol, psi, shift_angle=None, gw_spectrum_func=None):
     """
     Calculate the signal-to-noise ratio for a given GW signal and multiple detector pairs,
     allowing either an array of GW parameters or a custom function for the spectrum.
