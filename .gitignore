@@ -1,17 +1,4 @@
-# colpiled files
-*.pyc
-*.DS_Store
-
-# cached directories
-__pycache__/
-*.egg-info/
-
-# pypy files
-dist/
-build/
-examplepaper/
-pta_notebooks/
-example_private/
+git rm -r --cached example_private/
 
 
 

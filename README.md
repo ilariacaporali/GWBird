@@ -27,7 +27,7 @@ conda create -n myenv python=3.11
 ```sh
 conda activate myenv
 ```
-3. Install scientific packages
+3. Install packages
 ```sh
 conda install numpy scipy mpmath matplotlib glob2 ipykernel
 conda install -c conda-forge healpy
