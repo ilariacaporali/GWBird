@@ -7,7 +7,7 @@ from scipy.special import sph_harm
 from gwbird.utils import H0, h, c
 
 '''
-The nell module contain the following classes:
+The anisotropy module contain the following classes:
     - AngularResponse: Class for the angular response function.
     - Sensitivity_ell: Class for the sensitivity curve for the multipoles.
 '''
@@ -702,18 +702,18 @@ class Sensitivity_ell:
             mask = f>= 1/(365*24*60*60*Tobs)
             return np.where(mask, PTA_Pn() * 12 * (np.pi**2) * f**2, 1) # Apply the mask to the result
         
-        def PTA_Omegaeff_all(ell, f, p, d, pol, psi):
+        def PTA_Omegaeff_all(ell, f, p, D, pol, psi):
             '''
             Returns the effective energy density of the PTA
             '''
             s = 0
             for i in range(N):
                 for j in range(i+1, N): 
-                    s +=  AngularResponse.R_ell_pairwise(ell, p[i], p[j], D[i], D[j], f, pol, psi)**2 
+                    s +=  AngularResponse.R_ell_pairwise(ell, f, p[i], p[j], D[i], D[j], pol, psi)**2 
 
             return 2 * np.pi * np.pi * f**3 / np.sqrt(s/(PTA_Sn(f)* PTA_Sn(f))) / (3* ((H0/h)**2))
         
-        Omega_eff = PTA_Omegaeff_all(ell, f, p, d, pol, psi)
+        Omega_eff = PTA_Omegaeff_all(ell, f, p, D, pol, psi)
 
         def Omega_beta_PTA(f, snr, Tobs, Cl, beta, Omega_eff): 
             Tobs = Tobs*365*24*3600
