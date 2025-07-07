@@ -14,7 +14,7 @@ def test_Response():
 
 def test_Response_PTA():
     f = np.logspace(-9, -7, 100)
-    gamma_NANOGrav = Response.overlap_PTA(f, 't')
+    gamma_NANOGrav = Response.overlap_PTA(f, 't', 0)
 
 def test_pls():
     f = np.logspace(0, 3, 100)
