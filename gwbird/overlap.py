@@ -119,7 +119,7 @@ class Response:
             Theta, Phi = np.meshgrid(theta, phi)
             integrand = overlap_integrand(Theta, Phi, psi, c1, xA1, xB1, l1, c2, xA2, xB2, l2, f, pol) # gamma values
             integral = np.trapezoid( np.trapezoid(integrand, theta, axis=1), phi)
-            return integral
+            return np.real(integral)
     
 
         def get_detector_params(det):
