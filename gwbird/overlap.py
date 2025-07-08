@@ -257,15 +257,15 @@ class Response:
             expi = 1 - np.exp(1j*phase_i) 
             expj = 1 - np.exp(1j*phase_j)
 
-            pulsarterms = (expi * expj).astype(np.float64)
+            pulsarterms = np.real(expi * expj)#.astype(np.float64)
 
             if pol == 't' or pol == 'I':
                 gamma_ij = 3 * (Fi[0] * Fj[0] + Fi[1] * Fj[1]) * (1/(8*np.pi)) * np.sin(theta) * pulsarterms 
             elif pol == 'v':
                 gamma_ij = 3 * (Fi[2] * Fj[2]+ Fi[3] * Fj[3]) * (1/(8*np.pi)) * np.sin(theta) * pulsarterms
-            elif pol == 's':
+            elif pol == 's': # scalar breathing
                 gamma_ij = 3 * Fi[4] * Fj[4] * (1/(8*np.pi)) * np.sin(theta) * pulsarterms 
-            elif pol == 'l':
+            elif pol == 'l': # scalar longitudinal
                 gamma_ij = 3 * Fi[5] * np.conj(Fj[5]) * (1/(8*np.pi)) * np.sin(theta) * pulsarterms
             elif pol == 'V':
                 gamma_ij = 3j* (Fi[0] * Fj[1] - Fi[1] * Fj[0]) * (1/(8*np.pi)) * np.sin(theta)* pulsarterms 
@@ -298,7 +298,7 @@ class Response:
             Theta, Phi = np.meshgrid(theta, phi) 
             integrand = np.real(gamma_integrand(Theta, Phi, psi, f, pi, pj, Di, Dj, pol)) 
             integral = np.trapezoid(np.trapezoid(integrand, phi, axis=1), theta, axis=1)
-            return integral
+            return np.real(integral)
 
         return gamma(pi, pj, Di, Dj, f, pol, psi)
     

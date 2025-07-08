@@ -414,15 +414,15 @@ class AngularResponse:
             exp1 = 1 - np.exp(-1j*phase_i) 
             exp2 = 1 - np.exp(1j*phase_j)
 
-            pulsarterms = np.asarray(exp1 * exp2, dtype=np.float64)
+            pulsarterms = exp1 * exp2 #np.asarray(exp1 * exp2, dtype=np.float64)
 
             if pol=='t' or pol == 'I':
                 gamma_ij = 3* (Fi[0] * Fj[0] + Fi[1] * Fj[1])  *  sph_harm(m, ell, phi, theta)* np.sqrt(4* np.pi)/ (8*np.pi) * pulsarterms
             elif pol=='v':
                 gamma_ij = 3* (Fi[2] * Fj[2] + Fi[3] * Fj[3])  *  sph_harm(m, ell, phi, theta)* np.sqrt(4* np.pi)/ (8*np.pi) * pulsarterms
-            elif pol=='s':
+            elif pol=='s': # scalar breathing
                 gamma_ij = 3* (Fi[4] * Fj[4] )  *  sph_harm(m, ell, phi, theta)* np.sqrt(4* np.pi)/ (8*np.pi) * pulsarterms
-            elif pol=='l':
+            elif pol=='l': # scalar longitudinal
                 gamma_ij = 3* (Fi[5] * Fj[5]) *  sph_harm(m, ell, phi, theta)* np.sqrt(4* np.pi)/ (8*np.pi) * pulsarterms
             elif pol=='V':
                 gamma_ij = 3j* ((Fi[0] * Fj[1] - Fi[1] * Fj[0]) ) * sph_harm(m, ell, phi, theta)* np.sqrt(4* np.pi)/ (8*np.pi) *  pulsarterms
