@@ -72,6 +72,6 @@ If you use this code in your research, we kindly ask you to cite the paper: **[i
 
 ---
 
-For more information, visit the [official documentation](#), open an issue in the repository or contact via mail at ilaria.caporali@phd.unipi.it.
+For more information, open an issue in the repository or contact via mail at ilaria.caporali@phd.unipi.it.
 
 
