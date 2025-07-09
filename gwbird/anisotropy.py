@@ -150,28 +150,76 @@ class AngularResponse:
                 total += np.abs(Rellm(ell, m, u1, v1, c1, u2, v2, c2, psi, f, pol, L1, L2))**2
             return np.sqrt(total)
 
+        # # # Handling LISA detectors
+        # if any(det in det1 for det in ['LISA A', 'LISA E', 'LISA T']) and any(det in det2 for det in ['LISA A', 'LISA E', 'LISA T']):
+        #     c1, u1, v1, L1, _ = det.detector('LISA X', shift_angle=None)
+        #     c2, u2, v2, L2, _ = det.detector('LISA Y', shift_angle=None)
+
+        # # Handling ET detectors
+        # elif any(det in det1 for det in ['ET A', 'ET E', 'ET T']) and any(det in det2 for det in ['ET A', 'ET E', 'ET T']):
+        #     c1, u1, v1, L1, _ = det.detector('ET X', shift_angle=None)
+        #     c2, u2, v2, L2, _ = det.detector('ET Y', shift_angle=None)
+
+        # else:
+
+        #     if isinstance(det1, str):
+        #         c1, u1, v1, L1, _ = det.detector(det1, shift_angle)
+        #     elif isinstance(det1, list) and len(det1) == 5:
+        #         c1, u1, v1, L1, _ = det1
+        #     else:
+        #         c1, u1, v1, L1, _ = det1  
+
+        #     # Detector 2
+        #     if isinstance(det2, str):
+        #         c2, u2, v2, L2, _ = det.detector(det2, shift_angle)
+        #     elif isinstance(det2, list) and len(det2) == 5:
+        #         c2, u2, v2, L2, _ = det2
+        #     else:
+        #         c2, u2, v2, L2, _ = det2  
+
+        #     return R_ell_func(ell, c1, u1, v1, c2, u2, v2, f, pol, L1, L2, psi)
+
+
         # Handling LISA detectors
-        if any(det in det1 for det in ['LISA A', 'LISA E', 'LISA T']) and any(det in det2 for det in ['LISA A', 'LISA E', 'LISA T']):
+        if (
+            isinstance(det1, str) and isinstance(det2, str) and
+            any(det in det1 for det in ['LISA A', 'LISA E', 'LISA T']) and
+            any(det in det2 for det in ['LISA A', 'LISA E', 'LISA T'])
+        ):
             c1, u1, v1, L1, _ = det.detector('LISA X', shift_angle=None)
             c2, u2, v2, L2, _ = det.detector('LISA Y', shift_angle=None)
 
         # Handling ET detectors
-        elif any(det in det1 for det in ['ET A', 'ET E', 'ET T']) and any(det in det2 for det in ['ET A', 'ET E', 'ET T']):
+        elif (
+            isinstance(det1, str) and isinstance(det2, str) and
+            any(det in det1 for det in ['ET A', 'ET E', 'ET T']) and
+            any(det in det2 for det in ['ET A', 'ET E', 'ET T'])
+        ):
             c1, u1, v1, L1, _ = det.detector('ET X', shift_angle=None)
             c2, u2, v2, L2, _ = det.detector('ET Y', shift_angle=None)
 
+        # Generic detectors (string or list)
         else:
+            # Detector 1
             if isinstance(det1, str):
                 c1, u1, v1, L1, _ = det.detector(det1, shift_angle)
+            elif isinstance(det1, list) and len(det1) == 5:
+                c1, u1, v1, L1, _ = det1
             else:
                 c1, u1, v1, L1, _ = det1
 
+            # Detector 2
             if isinstance(det2, str):
                 c2, u2, v2, L2, _ = det.detector(det2, shift_angle)
+            elif isinstance(det2, list) and len(det2) == 5:
+                c2, u2, v2, L2, _ = det2
             else:
                 c2, u2, v2, L2, _ = det2
 
             return R_ell_func(ell, c1, u1, v1, c2, u2, v2, f, pol, L1, L2, psi)
+
+
+
 
         # Define response functions for even multipoles (l%2 == 0)
         # AET basis handling 

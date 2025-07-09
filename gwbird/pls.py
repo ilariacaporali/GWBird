@@ -11,8 +11,7 @@ The pls module contains the following functions:
     - PLS: Evaluate the sensitivity of a pair of detectors or a network of detectors to a Gravitational Wave Background (GWB) signal.
     - PLS_2pol: Evaluate the sensitivity of a network of three detectors to a Gravitational Wave Background (GWB) signal to Vector or scalar contribution.
     - PLS_3pol: Evaluate the sensitivity of a network of three detectors to a Gravitational Wave Background (GWB) signal to Tensor, Vector or Scalar contribution.
-    - PLS_PTA_NANOGrav: Compute the power law sensitivity curve for PTA with the NANOGrav catalog.
-    - PLS_PTA_EPTA: Compute the power law sensitivity curve for PTA with the EPTA catalog.
+    - PLS_PTA: Compute the power law sensitivity curve for PTA with the NANOGrav catalog.
 
 '''
 
