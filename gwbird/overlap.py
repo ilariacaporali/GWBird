@@ -208,7 +208,7 @@ class Response:
         - pi: len(3) array_like (Position of the first pulsar)
         - pj: len(3) array_like (Position of the second pulsar)
         - pol: str (Polarization of the signal, 't' for tensor, 'v' for vector, 's' for scalar breathing, 'l' for scalar longitudinal, 'I' for intensity, 'V' for circular)
-        - psi: float, optional (Polarization angle in radians)
+        - psi: float (Polarization angle in radians)
 
         Return:
         - overlap: array_like (Overlap reduction function between two pulsars)
@@ -284,7 +284,7 @@ class Response:
             - Dj: float (Distance to the second pulsar)
             - f: array_like (Frequency in Hz)
             - pol: str (Polarization of the signal, 't' for tensor, 'v' for vector, 's' for scalar breathing, 'l' for scalar longitudinal, 'I' for intensity, 'V' for circular)
-            - psi: float, optional (Polarization angle in radians, default is 0)
+            - psi: float (Polarization angle in radians, default is 0)
 
             Return:
             - integral: array_like (Overlap reduction function between two pulsars)
@@ -311,7 +311,7 @@ class Response:
         Parameters:
         - f: array_like (Frequency in Hz)
         - pol: str (Polarization of the signal, 't' for tensor, 'v' for vector, 's' for scalar breathing, 'l' for scalar longitudinal, 'I' for intensity, 'V' for circular)
-        - psi: float, optional (Polarization angle in radians)
+        - psi: float (Polarization angle in radians)
 
         Return:
         - overlap: array_like (overlap reduction function for a set of pulsars)

@@ -48,6 +48,7 @@ def PLS(det1, det2, f, fref, pol, snr, Tobs, psi, shift_angle=False, fI=None, Pn
     - Tobs : float
         Total observation time in years.
     - psi : float
+        Polarization angle in radians.
         
     Optional parameters:
 
