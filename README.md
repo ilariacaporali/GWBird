@@ -45,7 +45,9 @@ You're now ready to use GWBird in Python:
 
    ```python
    import gwbird
+   ```
 
+---
 
 ## 📚 Credits
 If you use this code in your research, we kindly ask you to cite the paper: [insert reference here]
