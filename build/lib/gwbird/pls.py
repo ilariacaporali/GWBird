@@ -4,7 +4,6 @@ from gwbird import detectors
 from gwbird.detectors import LISA_noise_AET
 from gwbird.overlap import Response
 from gwbird.utils import H0, h
-from scipy.interpolate import CubicSpline, interp1d 
 
 
 '''
@@ -12,8 +11,7 @@ The pls module contains the following functions:
     - PLS: Evaluate the sensitivity of a pair of detectors or a network of detectors to a Gravitational Wave Background (GWB) signal.
     - PLS_2pol: Evaluate the sensitivity of a network of three detectors to a Gravitational Wave Background (GWB) signal to Vector or scalar contribution.
     - PLS_3pol: Evaluate the sensitivity of a network of three detectors to a Gravitational Wave Background (GWB) signal to Tensor, Vector or Scalar contribution.
-    - PLS_PTA_NANOGrav: Compute the power law sensitivity curve for PTA with the NANOGrav catalog.
-    - PLS_PTA_EPTA: Compute the power law sensitivity curve for PTA with the EPTA catalog.
+    - PLS_PTA: Compute the power law sensitivity curve for PTA with the NANOGrav catalog.
 
 '''
 
@@ -50,6 +48,7 @@ def PLS(det1, det2, f, fref, pol, snr, Tobs, psi, shift_angle=False, fI=None, Pn
     - Tobs : float
         Total observation time in years.
     - psi : float
+        Polarization angle in radians.
         
     Optional parameters:
 
@@ -59,8 +58,8 @@ def PLS(det1, det2, f, fref, pol, snr, Tobs, psi, shift_angle=False, fI=None, Pn
         Frequency arrays and corresponding Power Spectral Densities (PSDs) for custom detectors or custom PSD.
         These are used when no predefined detector networks are chosen.
 
-    Returns:
-    - pls: power law sensitivity curve  (h^2 \Omega_{GW}(f))
+    Return:
+    - pls: array_like (power law sensitivity curve  (h^2 \Omega_{GW}(f)))
         The sensitivity of the detector(s) to the GWB signal, evaluated as the Power-Law Sensitivity (PLS). 
         This is a function of the observation time, SNR, and the detectors' noise characteristics.
 
@@ -87,7 +86,7 @@ def PLS(det1, det2, f, fref, pol, snr, Tobs, psi, shift_angle=False, fI=None, Pn
         - orf: array_like (Overlap reduction function)
         - Ni, Nj: array_like (Power Spectral Density of the detectors)
 
-        Returns:
+        Return:
         - Effective noise power spectral density (array_like)
         '''
 
@@ -102,7 +101,7 @@ def PLS(det1, det2, f, fref, pol, snr, Tobs, psi, shift_angle=False, fI=None, Pn
         - orf: array_like (Overlap reduction function)
         - Ni, Nj: array_like (Power Spectral Density of the detectors)
 
-        Returns:
+        Return:
         - Effective energy density : array_like
         '''
         return 10 * np.pi**2 / (3 * (H0**2) / (h**2)) * f**3 * S_eff(orf, Ni, Nj)
@@ -120,7 +119,7 @@ def PLS(det1, det2, f, fref, pol, snr, Tobs, psi, shift_angle=False, fI=None, Pn
         - orf: array_like (Overlap reduction function)
         - Ni, Nj: array_like (Power Spectral Density of the detectors)
 
-        Returns:
+        Return:
         - Energy density for a given beta : array_like
         '''
         Tobs = Tobs * 365 * 24 * 3600
@@ -142,7 +141,7 @@ def PLS(det1, det2, f, fref, pol, snr, Tobs, psi, shift_angle=False, fI=None, Pn
         - orf: array_like (Overlap reduction function)
         - Ni, Nj: array_like (Power Spectral Density of the detectors)
 
-        Returns:
+        Return:
         - Power spectral density of the GW signal : array_like
         '''
         return Omega_beta(f, fref, snr, Tobs, beta, orf, Ni, Nj) * ((f / fref) ** beta)
@@ -159,7 +158,7 @@ def PLS(det1, det2, f, fref, pol, snr, Tobs, psi, shift_angle=False, fI=None, Pn
         - orf: array_like (Overlap reduction function)
         - Ni, Nj: array_like (Power Spectral Density of the detectors)
 
-        Returns:
+        Return:
         - Beta values, energy density of the GW signal : array_like, array_like
         '''
         beta = np.linspace(-40, 40, 1000)
@@ -176,9 +175,9 @@ def PLS(det1, det2, f, fref, pol, snr, Tobs, psi, shift_angle=False, fI=None, Pn
 
         psd_A = psd_E = psd_T = np.interp(f, fI, PnI)
 
-        R_AA = Response.overlap('ET A', 'ET A', f, psi, pol)
-        R_EE = Response.overlap('ET E', 'ET E', f, psi, pol)
-        R_TT = Response.overlap('ET T', 'ET T', f, psi, pol)
+        R_AA = Response.overlap('ET A', 'ET A', f, pol, psi)
+        R_EE = Response.overlap('ET E', 'ET E', f, pol, psi)
+        R_TT = Response.overlap('ET T', 'ET T', f, pol, psi)
 
         _, Omega_A = all_Omega_GW(f, fref, snr, Tobs, R_AA, psd_A, psd_A)
         _, Omega_E = all_Omega_GW(f, fref, snr, Tobs, R_EE, psd_E, psd_E)
@@ -197,9 +196,9 @@ def PLS(det1, det2, f, fref, pol, snr, Tobs, psi, shift_angle=False, fI=None, Pn
         psd_E = LISA_noise_AET(f, 'E')
         psd_T = LISA_noise_AET(f, 'T')
 
-        R_AA = Response.overlap('LISA A', 'LISA A', f, psi, pol)
-        R_EE = Response.overlap('LISA E', 'LISA E', f, psi, pol)
-        R_TT = Response.overlap('LISA T', 'LISA T', f, psi, pol)
+        R_AA = Response.overlap('LISA A', 'LISA A', f, pol, psi)
+        R_EE = Response.overlap('LISA E', 'LISA E', f, pol, psi)
+        R_TT = Response.overlap('LISA T', 'LISA T', f, pol, psi)
 
         _, Omega_A = all_Omega_GW(f, fref, snr, Tobs, R_AA, psd_A, psd_A)
         _, Omega_E = all_Omega_GW(f, fref, snr, Tobs, R_EE, psd_E, psd_E)
@@ -224,7 +223,7 @@ def PLS(det1, det2, f, fref, pol, snr, Tobs, psi, shift_angle=False, fI=None, Pn
         PnI = np.interp(f, fI, PnI)
         PnJ = np.interp(f, fJ, PnJ)
         
-        orfIJ = overlap.Response.overlap(det1, det2, f, psi, pol, shift_angle)
+        orfIJ = overlap.Response.overlap(det1, det2, f,  pol, psi, shift_angle)
         beta, Omega = all_Omega_GW(f, fref, snr, Tobs, orfIJ, PnI, PnJ)
 
         pls = np.max(Omega, axis=0)
@@ -266,7 +265,7 @@ def PLS_2pol(det1, det2, det3, f, fref, pol, snr, Tobs, psi, shift_angle=None, f
         Frequency arrays and corresponding Power Spectral Densities (PSDs) for custom detectors or if different PSDs from the standard ones are used.
         These are used when no predefined detector networks are chosen.
     
-    Returns:
+    Return:
 
     - pls: power law sensitivity curve  (h^2 \Omega_{GW}(f))
         The sensitivity of the detector network to the GWB signal, evaluated as the Power-Law Sensitivity (PLS) for the vector or scalar contribution.
@@ -285,12 +284,12 @@ def PLS_2pol(det1, det2, det3, f, fref, pol, snr, Tobs, psi, shift_angle=None, f
     PnK = np.interp(f, fK, PnK)
 
 
-    orf_12_t = overlap.Response.overlap(det1, det2, f, psi , 't', shift_angle )
-    orf_13_x = overlap.Response.overlap(det1, det3, f, psi , pol, shift_angle )
-    orf_13_t = overlap.Response.overlap(det1, det3, f, psi , 't', shift_angle )
-    orf_12_x = overlap.Response.overlap(det1, det2, f, psi , pol, shift_angle )
+    orf_12_t = overlap.Response.overlap(det1, det2, f, 't', psi, shift_angle )
+    orf_13_x = overlap.Response.overlap(det1, det3, f, pol, psi, shift_angle )
+    orf_13_t = overlap.Response.overlap(det1, det3, f, 't', psi, shift_angle )
+    orf_12_x = overlap.Response.overlap(det1, det2, f, pol, psi, shift_angle )
 
-    orfIJK = orf_12_t * orf_13_x - orf_13_t * orf_12_x
+    #orfIJK = orf_12_t * orf_13_x - orf_13_t * orf_12_x
 
     def S_eff(orf_12_t, orf_13_x, orf_13_t, orf_12_x,  Ni, Nj, Nk):
         '''
@@ -300,7 +299,7 @@ def PLS_2pol(det1, det2, det3, f, fref, pol, snr, Tobs, psi, shift_angle=None, f
         - orf_12_t, orf_13_x, orf_13_t, orf_12_x: array_like (Overlap reduction functions)
         - Ni, Nj, Nk: array_like (Power Spectral Density of the detectors)
 
-        Returns:
+        Return:
         - Effective noise power spectral density : array_like
         '''
         return ((orf_12_t * orf_13_x - orf_13_t * orf_12_x)**2 / (orf_12_t**2 * Ni * Nk + orf_13_t**2 * Ni * Nj))**(-0.5)
@@ -317,7 +316,7 @@ def PLS_2pol(det1, det2, det3, f, fref, pol, snr, Tobs, psi, shift_angle=None, f
         - orf_12_t, orf_13_x, orf_13_t, orf_12_x: array_like (Overlap reduction functions)
         - Ni, Nj, Nk: array_like (Power Spectral Density of the detectors)
 
-        Returns:
+        Return:
         - Effective Energy density : array_like
         '''
         return 10* np.pi**2 /(3* (H0**2)/(h**2))* f**3 * S_eff(orf_12_t, orf_13_x, orf_13_t, orf_12_x, Ni, Nj, Nk)
@@ -335,7 +334,7 @@ def PLS_2pol(det1, det2, det3, f, fref, pol, snr, Tobs, psi, shift_angle=None, f
         - orf_12_t, orf_13_x, orf_13_t, orf_12_x: array_like (Overlap reduction functions)
         - Ni, Nj, Nk: array_like (Power Spectral Density of the detectors)
 
-        Returns:
+        Return:
         - Energy density for a given beta : array_like
         '''
         Tobs = Tobs * 365 * 24 * 3600
@@ -357,7 +356,7 @@ def PLS_2pol(det1, det2, det3, f, fref, pol, snr, Tobs, psi, shift_angle=None, f
         - orf_12_t, orf_13_x, orf_13_t, orf_12_x: array_like (Overlap reduction functions)
         - Ni, Nj, Nk: array_like (Power Spectral Density of the detectors)
 
-        Returns:
+        Return:
         - Energy density of the GW signal : array_like
         '''
         return Omega_beta(f, fref, snr, Tobs, beta, orf_12_t, orf_13_x, orf_13_t, orf_12_x, Ni, Nj, Nk) * ((f/fref)**(beta))
@@ -374,7 +373,7 @@ def PLS_2pol(det1, det2, det3, f, fref, pol, snr, Tobs, psi, shift_angle=None, f
         - orf_12_t, orf_13_x, orf_13_t, orf_12_x: array_like (Overlap reduction functions)
         - Ni, Nj, Nk: array_like (Power Spectral Density of the detectors)
 
-        Returns:
+        Return:
         - Beta values, energy density of the GW signal : array_like, array_like
         '''
         beta = np.linspace(-40, 40, 1000)
@@ -425,8 +424,8 @@ def PLS_3pol(det1, det2, det3, f, fref, pol, snr, Tobs, psi, shift_angle=None, f
         Frequency arrays and corresponding Power Spectral Densities (PSDs) for custom detectors or if different PSDs from the standard ones are used.
         These are used when no predefined detector networks are chosen.
 
-    Returns:
-    - pls: power law sensitivity curve  (h^2 \Omega_{GW}(f))
+    Return:
+    - pls: array_like (power law sensitivity curve  (h^2 \Omega_{GW}(f)))
         The sensitivity of the detector network to the GWB signal, evaluated as the Power-Law Sensitivity (PLS) for the tensor, vector or scalar contribution
         when all of them are present.
     '''
@@ -443,17 +442,17 @@ def PLS_3pol(det1, det2, det3, f, fref, pol, snr, Tobs, psi, shift_angle=None, f
     PnK = np.interp(f, fK, PnK)
 
 
-    orf_12_t = overlap.Response.overlap(det1, det2, f, psi , 't', shift_angle )
-    orf_23_t = overlap.Response.overlap(det2, det3, f, psi , 't', shift_angle )
-    orf_31_t = overlap.Response.overlap(det1, det3, f, psi , 't', shift_angle )
+    orf_12_t = overlap.Response.overlap(det1, det2, f, 't', psi , shift_angle )
+    orf_23_t = overlap.Response.overlap(det2, det3, f, 't', psi , shift_angle )
+    orf_31_t = overlap.Response.overlap(det1, det3, f, 't', psi , shift_angle )
 
-    orf_12_v = overlap.Response.overlap(det1, det2, f, psi , 'v', shift_angle )
-    orf_23_v = overlap.Response.overlap(det2, det3, f, psi , 'v', shift_angle )
-    orf_31_v = overlap.Response.overlap(det1, det3, f, psi , 'v', shift_angle )
+    orf_12_v = overlap.Response.overlap(det1, det2, f, 'v', psi , shift_angle )
+    orf_23_v = overlap.Response.overlap(det2, det3, f, 'v', psi , shift_angle )
+    orf_31_v = overlap.Response.overlap(det1, det3, f, 'v', psi , shift_angle )
 
-    orf_12_s = overlap.Response.overlap(det1, det2, f, psi , 's', shift_angle )
-    orf_23_s = overlap.Response.overlap(det2, det3, f, psi , 's', shift_angle )
-    orf_31_s = overlap.Response.overlap(det1, det3, f, psi , 's', shift_angle )
+    orf_12_s = overlap.Response.overlap(det1, det2, f, 's', psi , shift_angle )
+    orf_23_s = overlap.Response.overlap(det2, det3, f, 's', psi , shift_angle )
+    orf_31_s = overlap.Response.overlap(det1, det3, f, 's', psi , shift_angle )
 
     orfIJK = orf_12_t * ( orf_23_s * orf_31_v - orf_31_s * orf_23_v) + \
                 orf_23_t * ( orf_31_s * orf_12_v - orf_12_s * orf_31_v) + \
@@ -503,7 +502,7 @@ def PLS_3pol(det1, det2, det3, f, fref, pol, snr, Tobs, psi, shift_angle=None, f
         - a_1, a_2, a_3: array_like (Overlap reduction functions combination)
         - Ni, Nj, Nk: array_like (Power Spectral Density of the detectors)
 
-        Returns:
+        Return:
         - Effective noise power spectral density : array_like
         '''
         den = a_1**2 * Ni * Nk + a_2**2 * Ni * Nj + a_3**2 * Nj * Nk
@@ -519,7 +518,7 @@ def PLS_3pol(det1, det2, det3, f, fref, pol, snr, Tobs, psi, shift_angle=None, f
         - a_1, a_2, a_3: array_like (Overlap reduction functions combination)
         - Ni, Nj, Nk: array_like (Power Spectral Density of the detectors)
 
-        Returns:
+        Return:
         - Effective Energy density : array_like
         '''
 
@@ -539,7 +538,7 @@ def PLS_3pol(det1, det2, det3, f, fref, pol, snr, Tobs, psi, shift_angle=None, f
         - a_1, a_2, a_3: array_like (Overlap reduction functions combination)
         - Ni, Nj, Nk: array_like (Power Spectral Density of the detectors)
 
-        Returns:
+        Return:
         - Energy density for a given beta : array_like
         '''
         Tobs = Tobs * 365 * 24 * 3600
@@ -562,7 +561,7 @@ def PLS_3pol(det1, det2, det3, f, fref, pol, snr, Tobs, psi, shift_angle=None, f
         - a_1, a_2, a_3: array_like (Overlap reduction functions combination)
         - Ni, Nj, Nk: array_like (Power Spectral Density of the detectors)
 
-        Returns:
+        Return:
         - Energy density of the GW signal : array_like
         '''
         return Omega_beta(f, fref, snr, Tobs, beta, orfIJK, a_1, a_2, a_3, Ni, Nj, Nk) * ((f/fref)**(beta))
@@ -580,7 +579,7 @@ def PLS_3pol(det1, det2, det3, f, fref, pol, snr, Tobs, psi, shift_angle=None, f
         - a_1, a_2, a_3: array_like (Overlap reduction functions combination)
         - Ni, Nj, Nk: array_like (Power Spectral Density of the detectors)
 
-        Returns:
+        Return:
         - Beta values, energy density of the GW signal : array_like, array_like
         '''
         beta = np.linspace(-40, 40, 1000)
@@ -609,12 +608,12 @@ def PLS_PTA(f, snr, Tobs, pol, psi):
     - Tobs: float (observation time in years)
     - pol: str (Polarization of the signal, 't' for tensor, 'v' for vector, 's' for scalar, 'I' for intensity, 'V' for circular)
 
-    Returns:
+    Return:
     - pls: array [shape: len(f)] (power law sensitivity curve  (h^2 \Omega_{GW}(f))) 
 
     '''
 
-    N, p, d= detectors.get_NANOGrav_pulsars()
+    N, p, D = detectors.get_NANOGrav_pulsars()
 
     def PTA_Pn():
 
@@ -639,7 +638,7 @@ def PLS_PTA(f, snr, Tobs, pol, psi):
         N = len(p)
         for i in range(N):
             for j in range(i+1, N):
-                s +=  Response.pairwise_overlap(f, p[i], p[j], d[i], d[j], pol, psi)**2 
+                s +=  Response.overlap_pairwise(f, p[i], p[j], D[i], D[j], pol, psi)**2 
 
         return 2 * np.pi * np.pi * f**3 / np.sqrt(s/(PTA_Sn(f)* PTA_Sn(f))) / (3* ((H0/h)**2))
     

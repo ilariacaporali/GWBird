@@ -4,74 +4,52 @@
 
 # GWBird 
 
-GWBird is a Python package that allows computing the response and sensitivity of a network of detectors to a stochastic gravitational wave background.
 
-
+**GWBird** is a Python package that computes the response and sensitivity of a network of detectors to a stochastic gravitational wave background.
 
 <p align='center'>
    <img src='GWBirdlogo.png' alt='logo' width='210'>
 </p>
 
-## Installation
+---
 
-### Requirements
+## 🛠 Installation
 
-To use GWBird, make sure to follow this procedure:
-
-1. Create a new conda environment with Python ≥ 3.10
-```sh
-conda create -n myenv python=3.11
-```
-
-2. Activate the environment
-```sh
-conda activate myenv
-```
-3. Install packages
-```sh
-conda install numpy scipy mpmath matplotlib glob2 ipykernel
-conda install -c conda-forge healpy
-```
-4. Install PINT (for pulsar timing analysis) from GitHub
-```sh
-pip install git+https://github.com/nanograv/PINT.git
-```
-5. (Optional) Register the environment as a Jupyter kernel
-```sh
-python -m ipykernel install --user --name=myenv --display-name "Python (myenv)"
-```
-6. Verify installation
-```sh
-python -c "import numpy, healpy, scipy, mpmath, matplotlib, pint, glob; print('✅ All packages installed correctly.')"
-```
-
-### Download and code installation
-
-1. Clone or download this repository to your computer:
-
-   ```sh
-   git clone /https://github.com/ilariacaporali/GWBird
-   cd GWBird
-   ```
-
-2. Install the package in your selected environment by running:
-
-   ```sh
-   pip install .
-   ```
-
-3. Now you can import GWBird in your Python scripts:
-
-   ```python
-   import gwbird
-   ```
-
-## Credits
-
-If you use this code in your research, we kindly ask you to cite the paper: **[insert reference]**.
+You can install GWBird **automatically** using the provided setup script.
 
 ---
 
-For more information, open an issue in the repository or contact via mail at ilaria.caporali@phd.unipi.it.
+### ✅ Automatic Setup (Recommended)
 
+This is the easiest and cleanest way to install everything in a dedicated conda environment.
+
+#### Steps:
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/ilariacaporali/GWBird
+   cd GWBird
+
+2. Inside the repository, run the setup script:
+
+   ```bash
+   bash setup_env.sh
+
+3. When the installation completes, activate the environment:
+
+   ```bash
+   conda activate gwbird_env
+
+You're now ready to use GWBird in Python:
+
+import gwbird
+
+## 📚 Credits
+If you use this code in your research, we kindly ask you to cite the paper: [insert reference here]
+
+
+## 📬 Contact
+For issues or questions, please open an issue on the GitHub repository or contact:
+📧 ilaria.caporali@phd.unipi.it
 

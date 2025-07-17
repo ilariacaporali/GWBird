@@ -3,8 +3,8 @@ MANIFEST.in
 README.md
 setup.py
 gwbird/__init__.py
+gwbird/anisotropy.py
 gwbird/detectors.py
-gwbird/nell.py
 gwbird/overlap.py
 gwbird/pls.py
 gwbird/skymap.py
@@ -15,8 +15,6 @@ gwbird.egg-info/SOURCES.txt
 gwbird.egg-info/dependency_links.txt
 gwbird.egg-info/requires.txt
 gwbird.egg-info/top_level.txt
-gwbird/EPTA/__init__.py
-gwbird/EPTA/epta.txt
 gwbird/NANOGrav/B1855+09_PINT_20220301.nb.par
 gwbird/NANOGrav/B1937+21_PINT_20220306.nb.par
 gwbird/NANOGrav/B1937+21ao_PINT_20220304.nb.par

@@ -1,7 +1,7 @@
 Metadata-Version: 2.1
 Name: gwbird
 Version: 0.1.0
-Summary: A package for gravitational wave background analysis
+Summary: A package for gravitational wave background characterization
 Home-page: https://github.com/ilariacaporali/GWBird/tree/master
 Author: Ilaria Caporali, Angelo Ricciardone
 Classifier: Programming Language :: Python :: 3

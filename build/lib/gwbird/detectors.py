@@ -5,7 +5,7 @@ from gwbird.utils import REarth
 from gwbird.psd import psd_dir
 from gwbird.NANOGrav import NANOGrav_dir
 from pint.models import get_model
-import glob, os 
+import glob
 
 
 
@@ -31,7 +31,7 @@ class Rotations:
         - angle: float (angle of rotation (radians))
         - axis: array_like (axis of rotation (unitary vector))
 
-        Returns: 
+        Return: 
         - rotated vector: array_like
         """
         axis = axis / np.linalg.norm(axis)
@@ -47,7 +47,7 @@ class Rotations:
         - vec1: array_like (first vector)
         - vec2: array_like (second vector)
 
-        Returns:
+        Return:
         - angle: float (angle between the two vectors)
         """
         return np.arccos(np.clip(np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2)), -1.0, 1.0))
@@ -60,7 +60,7 @@ class Rotations:
         - vec1: array_like (first vector)
         - vec2: array_like (second vector)
 
-        Returns:
+        Return:
         - perpendicular vector: array_like
         """
         return np.cross(vec1, vec2)
@@ -114,26 +114,47 @@ class Observatories:
     # Einstein Telescope (ET) - triangular configuration
 
     def ET_arms(self):
-        xA = np.array([0., 0., 0.])
-        xB = np.array([+1/2., sqrt(3)/2, 0])
-        xC = np.array([-1/2, sqrt(3)/2, 0])
-        lBA = xB - xA
-        lCA = xC - xA
-        lBC = xB - xC
         l = 1e4  # m
-        return xA, xB, xC, lBA, lCA, lBC, l
+        c = np.array([0.751, 0.125, 0.649])* REarth
+
+        d1 = np.array([-0.640, -0.106, 0.761])
+        d2 = np.array([0.178, 0.908, -0.381])
+        d3 = np.array([0.462, -0.801, -0.381])
+        
+        d = l/2 /cos(np.pi/6)
+
+        v1 = c + d1 * d
+        v2 = c + d2 * d
+        v3 = c + d3 * d
+
+        arm1 = v2 - v1
+        arm2 = v3 - v2
+        arm3 = v1 - v3
+
+        arm1 = arm1 / np.linalg.norm(arm1)
+        arm2 = arm2 / np.linalg.norm(arm2)
+        arm3 = arm3 / np.linalg.norm(arm3)
+
+        return v1, v2, v3, arm1, arm2, arm3, l
 
     def ET_X(self):
-        xA, xB, xC, lBA, lCA, lBC, l= self.ET_arms()
-        return xA * l, lBA, lCA, l, "ET X"
-
+        v1, v2, v3, arm1, arm2, arm3, l = self.ET_arms()
+        xA = arm1
+        xB = -arm3
+        return v1, xA, xB, l, "ET X"
+    
     def ET_Y(self):
-        xA, xB, xC, lBA, lCA, lBC, l = self.ET_arms()
-        return xB * l, -lBC, -lBA, l, "ET Y"
-
+        v1, v2, v3, arm1, arm2, arm3, l = self.ET_arms()
+        xA = arm2
+        xB = -arm1
+        return v2, xA, xB, l, "ET Y"
+    
     def ET_Z(self):
-        xA, xB, xC, lBA, lCA, lBC, l = self.ET_arms()
-        return xC * l, -lCA, lBC, l, "ET Z"
+        v1, v2, v3, arm1, arm2, arm3, l = self.ET_arms()
+        xA = arm3
+        xB = -arm2
+        return v3, xA, xB, l, "ET Z"
+
     
     # Einstein Telescope (ET) - L-shaped configuration
 
@@ -232,8 +253,19 @@ def available_detectors():
 
 def detector_Pn(det_name):
     """
-    Method to return the PSD of the observatories
+    Method to return the PSD of the detectors
+
+    Parameters:
+    - det: str 
+        The name of the detector to consider.
+        The names must be in the list of detectors available.
+        The list of available detectors can be obtained by calling the function ```detectors.available_detectors()```.
+        The names of the detectors are case sensitive.
+
+    Return:
+    - f_PSD, PSD : array_like, array_like
     """
+
     base_path = psd_dir  # path to the PSD files # aggiungere referenze
     file_map = {
         'LIGO H': 'aligo_design.txt', # https://dcc.ligo.org/LIGO-T1500293/public
@@ -246,9 +278,9 @@ def detector_Pn(det_name):
         'ET Y':   'ET_Sh_coba.txt', # Coba
         'ET Z':   'ET_Sh_coba.txt', # Coba
         'CE':     'ce1.txt', # https://dcc.ligo.org/LIGO-T1500293/public
-        'LISA X': 'lisa_noise.txt', # A channel 
-        'LISA Y': 'lisa_noise.txt', # A channel
-        'LISA Z': 'lisa_noise.txt'  # A channel
+        'LISA X': 'lisa_noise.txt',  
+        'LISA Y': 'lisa_noise.txt', 
+        'LISA Z': 'lisa_noise.txt' 
     }
 
     if det_name.startswith('ET L'):
@@ -319,13 +351,13 @@ def get_NANOGrav_pulsars(): # https://zenodo.org/records/14773896
     '''
     Function to get the pulsar data from the NANOGrav dataset
 
-    Returns:
+    Return:
     - N_pulsar: int (number of pulsars)
     - pulsar_xyz: array_like (pulsar coordinates)
     - DIST_array: array_like (pulsar distances) # in meters
 
     '''
-
+    rng = np.random.default_rng(42) # sampling the distances from gaussians
     pfiles = glob.glob(NANOGrav_dir+ '/'+'*.par')
     pfiles = [pf for pf in pfiles if not 'gbt' in pf and not 'ao' in pf]
     pnames = [pf[4:pf.index('_PINT')] for pf in pfiles]
@@ -340,10 +372,21 @@ def get_NANOGrav_pulsars(): # https://zenodo.org/records/14773896
         RA[m.PSR.value] = c.ra.deg  
         DEC[m.PSR.value] = c.dec.deg
 
-        if hasattr(m, 'PX') and m.PX.value > 0:  
-            DIST[m.PSR.value] = 1000 / m.PX.value  
+        if hasattr(m, 'PX') and m.PX.value > 0:
+            px_val = m.PX.value
+            px_err = m.PX.uncertainty_value if m.PX.uncertainty_value is not None else 0.0
+
+            if px_err > 0: # sampling due to uncertainty on the distances
+                px_sampled = rng.normal(loc=px_val, scale=px_err)
+            else:
+                px_sampled = px_val
+
+            if px_sampled > 0:
+                DIST[m.PSR.value] = 1000 / px_sampled  # parsec
+            else:
+                DIST[m.PSR.value] = None
         else:
-            DIST[m.PSR.value] = None  
+            DIST[m.PSR.value] = None
 
     # parsec 2 meters
     for psr in DIST.keys():
@@ -351,7 +394,6 @@ def get_NANOGrav_pulsars(): # https://zenodo.org/records/14773896
             DIST[psr] *= 3.086e16
 
     # ra dec 2  theta phi 
-
     theta_pulsar = np.deg2rad(90.0 - np.array(list(DEC.values())))
     phi_pulsar = np.deg2rad(list(RA.values()))
 

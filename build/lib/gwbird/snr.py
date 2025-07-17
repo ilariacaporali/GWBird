@@ -3,14 +3,14 @@ from gwbird import detectors
 from gwbird.overlap import Response
 from gwbird.utils import H0
 
-def SNR(Tobs, f, gw_params, detectors_list, pol, psi=0, shift_angle=None, gw_spectrum_func=None):
+def SNR(Tobs, f, gw_params, detectors_list, pol, psi, shift_angle=None, gw_spectrum_func=None):
     """
     Calculate the signal-to-noise ratio for a given GW signal and multiple detector pairs,
     allowing either an array of GW parameters or a custom function for the spectrum.
     
-    Parameters
+    Parameters:
     - Tobs : float (Observation time in years)
-    - f : array_like (Frequency of the GW signal)
+    - f : array_like (Frequency of the GW signal in Hz)
     - gw_params : array-like or None (if array-like, it should be [log10A_gw, n_gw, fref], if None you have to consider a gw_spectrum_func later)
     - detectors_list : list of str (list of detector names)
     - pol : str (polarization of the GW signal)
@@ -18,7 +18,7 @@ def SNR(Tobs, f, gw_params, detectors_list, pol, psi=0, shift_angle=None, gw_spe
     - shift_angle : float, optional (shift angle used if one of the detectors is ET_L2)
     - gw_spectrum_func : function, optional (Custom function defining the GW energy spectrum Omega_GW(f))
 
-    Returns
+    Return:
     - float (computed signal-to-noise ratio (SNR))
     """
     
@@ -36,7 +36,7 @@ def SNR(Tobs, f, gw_params, detectors_list, pol, psi=0, shift_angle=None, gw_spe
         
         channels = ['A', 'E', 'T']
         for channel in channels:
-            overlap = Response.overlap(f'LISA {channel}', f'LISA {channel}', f, psi, pol)
+            overlap = Response.overlap(f'LISA {channel}', f'LISA {channel}', f, pol, psi)
             noise = detectors.LISA_noise_AET(f, channel)
             integrand = (Omega_gw * overlap) ** 2 / (f ** 6 * noise**2)
             total_integral += np.trapezoid(integrand, f)
@@ -60,7 +60,7 @@ def SNR(Tobs, f, gw_params, detectors_list, pol, psi=0, shift_angle=None, gw_spe
         integrand = 0
         for i in range(N):
             for j in range(i + 1, N): 
-                overlap = Response.pairwise_overlap(f, p[i], p[j],D[i], D[j], pol, psi)
+                overlap = Response.overlap_pairwise(f, p[i], p[j],D[i], D[j], pol, psi)
                 integrand += (overlap * Omega_GW(f)) ** 2 / (f ** 6 * PTA_Sn(f)**2)
         total_integral = np.trapezoid(integrand, f)
         snr = 3 * H0**2 / (2 * np.pi**2) * np.sqrt(2 * total_integral * Tobs)
@@ -74,9 +74,9 @@ def SNR(Tobs, f, gw_params, detectors_list, pol, psi=0, shift_angle=None, gw_spe
             det2 = detectors_list[j]
             
             if "ET L2" in [det1, det2]:
-                orf = Response.overlap(det1, det2, f, psi, pol, shift_angle)
+                orf = Response.overlap(det1, det2, f, pol, psi, shift_angle)
             else:
-                orf = Response.overlap(det1, det2, f, psi, pol)
+                orf = Response.overlap(det1, det2, f, pol, psi)
             
             fI, PnI = detectors.detector_Pn(det1)
             fII, PnII = detectors.detector_Pn(det2)
@@ -90,4 +90,4 @@ def SNR(Tobs, f, gw_params, detectors_list, pol, psi=0, shift_angle=None, gw_spe
             total_integral += integral
     
     snr = 3 * H0**2 / (10 * np.pi**2) * np.sqrt(2 * total_integral * Tobs)
-    return snr
+    return np.real(snr)

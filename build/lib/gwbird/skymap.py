@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 from gwbird import detectors 
 from gwbird.utils import c
 import healpy as hp
-from healpy.newvisufunc import projview, newprojplot
 
 
 plt.rcParams['figure.dpi'] = 300
@@ -40,7 +39,7 @@ class Basis:
         - theta: float/array_like (polar angle in [0, pi])
         - phi: float/array_like (azimuthal angle in [0, 2pi])
 
-        Returns:
+        Return:
         - u, v, Omega: array_like (orthonormal basis)
         '''
         
@@ -50,12 +49,12 @@ class Basis:
             -np.sin(theta)
         ], axis=0) 
         
-        v = np.stack([
-            np.sin(phi), 
-            -np.cos(phi), 
-            np.zeros_like(theta)
-        ], axis=0)  
 
+        v = np.stack([
+            -np.sin(phi), 
+            np.cos(phi), 
+            np.zeros_like(theta)
+        ], axis=0) 
 
         Omega = np.stack([
             np.cos(phi) * np.sin(theta),
@@ -73,16 +72,16 @@ class Basis:
         Parameters:
         - theta: float/array_like (polar angle in [0, pi])
         - phi: float/array_like (azimuthal angle in [0, 2pi])
-        - psi: float/array_like (polarization angle in [0, pi])
+        - psi: float/array_like (polarization angle in [-pi/2, pi/2])
 
-        Returns:
+        Return:
         - m, n, Omega: array_like (orthonormal basis)
         '''
 
         u, v, Omega = Basis.u_v_Omega_basis(theta, phi)
 
-        m = np.cos(psi) * u - np.sin(psi) * v
-        n = np.sin(psi) * u + np.cos(psi) * v
+        m = np.cos(psi) * u + np.sin(psi) * v
+        n = -np.sin(psi) * u + np.cos(psi) * v
         Omega = Omega
 
         return m, n, Omega
@@ -97,9 +96,9 @@ class PolarizationTensors:
         Parameters:
         - theta: float/array_like (polar angle in [0, pi])
         - phi: float/array_like (azimuthal angle in [0, 2pi])
-        - psi: float/array_like (polarization angle in [0, pi])
+        - psi: float/array_like (polarization angle in [-pi/2, pi/2])
 
-        Returns:
+        Return:
         - e_plus, e_cross, e_x, e_y, e_b, e_l: array_like (polarization tensors)
         '''
 
@@ -109,7 +108,7 @@ class PolarizationTensors:
         e_x = np.einsum('i...,k...',m,Omega)+np.einsum('i...,k...',Omega,m)
         e_y = np.einsum('i...,k...',n,Omega)+np.einsum('i...,k...',Omega,n)
         e_b = np.einsum('i...,k...',m,m)+np.einsum('i...,k...',n,n)
-        e_l = np.einsum('i...,k...',Omega,Omega) * sqrt(2)
+        e_l = np.einsum('i...,k...',Omega,Omega) #* sqrt(2)
 
         return e_plus, e_cross, e_x, e_y, e_b, e_l
     
@@ -120,7 +119,7 @@ class TransferFunction:
     def transfer_function(L, l, f, theta, phi, psi):
 
         '''
-        Transfer function to take into account the large antenna limit
+        Transfer function to take into account the antenna limit
     
         Parameters:
         - L: float (arm length)
@@ -128,9 +127,9 @@ class TransferFunction:
         - f: array_like (frequency)
         - theta: float/array_like (polar angle in [0, pi])
         - phi: float/array_like (azimuthal angle in [0, 2pi])
-        - psi: float/array_like (polarization angle in [0, pi])
+        - psi: float/array_like (polarization angle in [-pi/2, pi/2])
 
-        Returns:
+        Return:
         - transfer function: (array_like)
         '''
 
@@ -155,7 +154,7 @@ class AngularPatternFunction:
         Parameters:
         - theta: float/array_like (polar angle in [0, pi])
         - phi: float/array_like (azimuthal angle in [0, 2pi])
-        - psi: float/array_like (polarization angle in [0, pi])
+        - psi: float/array_like (polarization angle in [-pi/2, pi/2])
         - ce: array_like (vector pointing towards the detector location)
         - e1: array_like (unit vector of the detector arm 1)
         - e2: array_like (unit vector of the detector arm 2)
@@ -190,10 +189,10 @@ class AngularPatternFunction:
         Parameters:
         - theta: float/array_like (polar angle in [0, pi])
         - phi: float/array_like (azimuthal angle in [0, 2pi])
-        - psi: float/array_like (polarization angle in [0, pi])
+        - psi: float/array_like (polarization angle in [-pi/2, pi/2])
         - p: array_like (unit vector pointing towards the pulsar)
 
-        Returns:
+        Return:
         - F_plus, F_cross, F_x, F_y, F_b, F_l: array_like (angular pattern function)
         '''
         Omega = Basis.m_n_Omega_basis(theta, phi, psi)[2]
@@ -211,7 +210,7 @@ class AngularPatternFunction:
 
 class Skymaps:
 
-    def AntennaPattern(det1, det2, f, psi, pol, nside=32, shift_angle=None):
+    def antennapattern(det1, det2, f, psi, pol, nside=32, shift_angle=None):
             
         '''
         Antenna pattern function: detector response to an incoming GW signal
@@ -232,12 +231,12 @@ class Skymaps:
             - l: float (Length of the arm in meters)
             - name: str (Name of the detector)
         - f: array_like (frequency)
-        - psi: float/array_like (polarization angle in [0, pi])
+        - psi: float/array_like (polarization angle in [-pi/2, pi/2])
         - pol: str (polarization type: 't', 'v', 's, 'I', 'V')
         - nside: int (Healpix resolution parameter)
         - shift_angle: float (angle to rotate the detector, only for ET 2L)
 
-        Returns:
+        Return:
         - selected_map: array_like (Antenna pattern Function map)
 
         '''
@@ -271,8 +270,9 @@ class Skymaps:
 
         f_star = c/2/pi
         omega = Basis.m_n_Omega_basis(theta, phi, psi)[2]
-        exp_c1 = np.exp(1j*f/f_star * (np.einsum('iab,i->ab', omega, ec1))) 
-        exp_c2 = np.exp(1j*f/f_star * (np.einsum('iab,i->ab', omega, ec2)))
+
+        exp_c1 = np.exp(1j*f/f_star * (np.einsum('iab,i->ab', omega, ec1))) # to remove the factor present in the overlap
+        exp_c2 = np.exp(1j*f/f_star * (np.einsum('iab,i->ab', omega, ec2))) # to remove the factor present in the overlap
 
         F1 = np.array(F1)
         F2 = np.array(F2)
