@@ -43,8 +43,9 @@ This is the easiest and cleanest way to install everything in a dedicated conda 
 
 You're now ready to use GWBird in Python:
 
-   ```bash
+   ```python
    import gwbird
+
 
 ## 📚 Credits
 If you use this code in your research, we kindly ask you to cite the paper: [insert reference here]
