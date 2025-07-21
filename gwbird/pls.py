@@ -212,7 +212,7 @@ def PLS(det1, det2, f, fref, pol, snr, Tobs, psi, shift_angle=False, fI=None, Pn
 
         return np.sum(1 / pls**2, axis=0)**(-0.5)
 
-    elif isinstance(det1, str or list) and isinstance(det2, str or list):
+    elif isinstance(det1, (str, list)) and isinstance(det2, (str, list)):
         # Handle the case of custom detectors
         if fI is None and PnI is None:
             fI, PnI = detectors.detector_Pn(det1)

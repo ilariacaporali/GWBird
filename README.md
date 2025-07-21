@@ -19,7 +19,7 @@ You can install GWBird **automatically** using the provided setup script.
 
 ---
 
-### ✅ Automatic Setup (Recommended)
+### ✅ Automatic Setup 
 
 This is the easiest and cleanest way to install everything in a dedicated conda environment.
 
