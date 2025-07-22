@@ -50,7 +50,7 @@ You're now ready to use GWBird in Python:
 ---
 
 ## 📚 Credits
-If you use this code in your research, we kindly ask you to cite the paper: [insert reference here]
+If you use this code in your research, we kindly ask you to cite the paper: https://arxiv.org/abs/2507.15791
 
 
 ## 📬 Contact
