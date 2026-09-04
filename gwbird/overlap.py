@@ -4,7 +4,7 @@ from numpy import sin, pi
 from gwbird import detectors 
 from gwbird.skymap import Basis, AngularPatternFunction
 from gwbird.utils import c
-mp.dps = 50
+mp.mp.dps = 50
 
 
 '''

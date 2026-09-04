@@ -1,4 +1,27 @@
-git rm -r --cached example_private/
+# Build artifacts
+build/
+dist/
+*.egg-info/
+*.egg
 
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
 
+# Packaging
+*.whl
 
+# Virtual environments
+.venv/
+venv/
+env/
+
+# OS
+.DS_Store
+
+# Editors
+.vscode/
+.idea/
+
+# Jupyter
+.ipynb_checkpoints/
