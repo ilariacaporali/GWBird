@@ -244,10 +244,10 @@ class Response:
             Dj = Dj / 1e19
             Di = np.asarray(Di, dtype=np.longdouble)
             Dj = np.asarray(Dj, dtype=np.longdouble)
-            c = 3e8 / 1e8  #
+            c_scaled = c / 1e8
 
-            fDc_i  = f * Di / c *1e2
-            fDc_j = f * Dj / c * 1e2
+            fDc_i  = f * Di / c_scaled *1e2
+            fDc_j = f * Dj / c_scaled * 1e2
 
             phase_i = -2 * np.pi * fDc_i * (1 + np.einsum('iab,i->ab', Omega, pi)) 
             phase_i = np.asarray(phase_i, dtype=np.longdouble)  
